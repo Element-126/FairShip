@@ -99,10 +99,20 @@ def gettotalbrrpvsusy(h,histograms,mass,couplings):
        totalbr+=getbr(h,histoname,mass,coupling)
     return totalbr
 
+def checkChannel(channel):
+    """
+    Checks consistency between decay channel, lepton ID and coupling.
+    """
+    lepton_ids = [11, 13, 15]
+    lepton_str = ['e', 'mu', 'tau']
+    assert(abs(channel['idlepton']) == lepton_ids[channel['coupling']])
+    assert(channel['decay'].split('_')[-1] == lepton_str[channel['coupling']])
+
 def setChannels(P8gen,h,channels,mass,couplings,maxsumBR):
      pdg = P8gen.getPythiaInstance().particleData
      sumBR = 0
      for channel in channels:
+         checkChannel(channel)
          br = getbr(h,channel['decay'],mass,couplings[channel['coupling']])
          if br>0:
            if channel['id']=='15':
