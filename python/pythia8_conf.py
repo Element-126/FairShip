@@ -261,8 +261,8 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         #overwrite D_s+ decays
         P8gen.SetParameters("431:new  D_s+  D_s-    1   3   0    1.96849    0.00000    0.00000    0.00000  1.49900e-01   0   1   0   1   0")
         channels = [ {'id':'431','decay':'ds_mu', 'coupling':1,'idlepton':-13},\
-                     {'id':'411','decay':'ds_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'411','decay':'ds_tau','coupling':2,'idlepton':-15}]
+                     {'id':'431','decay':'ds_e',  'coupling':0,'idlepton':-11},\
+                     {'id':'431','decay':'ds_tau','coupling':2,'idlepton':-15}]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         #overwrite Lambda_c+ decays
