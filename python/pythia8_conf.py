@@ -225,7 +225,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         addHNLtoROOT(pid=9900015,m=mass,g=gamma)
         # 12 14 16 neutrinos replace with N2
-        charmhistograms = ['ds_e','d_e','d0_K-_e','d0_K*-_e','d_K0_e','lambdac_Lambda0_e','xic0_Xi-_e','ds_mu','d_mu','d0_K-_mu','d_K0_mu','d0_K*-_mu','lambdac_Lambda0_mu','xic0_Xi-_mu','d_tau','ds_tau']
+        charmhistograms = ['ds_e','d_e','d0_K-_e','d0_K*-_e','d_K0_e','lambdac_Lambda0_e','xic0_Xi-_e','ds_mu','d_mu','d0_K-_mu','d_K0_mu','d0_K*-_mu','lambdac_Lambda0_mu','xic0_Xi-_mu','d_tau','ds_tau','ds_eta_e','ds_eta_mu','d_K*bar0_e','d_K*bar0_mu']
         tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
         totaltauBR=gettotalbr(h,tauhistograms,mass,couplings,0.)
         maxsumBR=getmaxsumbr(h,charmhistograms,mass,couplings,totaltauBR)
@@ -312,7 +312,11 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                             'Omega_b-_tau','b0_D*-_tau','bs_D*_s-_tau','b_D0_bar_tau','b0_D-_tau','b_e','bc_e','b_D*0_bar_e',\
                             'b_D0_bar_e','b0_D*-_e','b0_D-_e','bs_D_s-_e','bs_D*_s-_e','bc_B_s0_e','bc_B0_e','bc_B*0_e','bc_B*_s0_e',\
                             'lambdab_Lambda_c+_e','Xib_Xi_c+_e','Omega_b-_e','b_mu','bc_mu','b_D*0_bar_mu','b_D0_bar_mu','b0_D-_mu',\
-                            'b0_D*-_mu','bs_D_s-_mu','bs_D*_s-_mu','bc_B_s0_mu','bc_B0_mu','bc_B*0_mu','bc_B*_s0_mu','lambdab_Lambda_c+_mu','Xib_Xi_c+_mu','Omega_b-_mu','b_mu']
+                            'b0_D*-_mu','bs_D_s-_mu','bs_D*_s-_mu','bc_B_s0_mu','bc_B0_mu','bc_B*0_mu','bc_B*_s0_mu',\
+                            'lambdab_Lambda_c+_mu','Xib_Xi_c+_mu','Omega_b-_mu',\
+                            'b_pi0_e','b_pi0_mu','b_pi0_tau','b0_pi-_e','b0_pi-_mu','b0_pi-_tau',\
+                            'b_rho0_e','b_rho0_mu','b_rho0_tau','b0_rho-_e','b0_rho-_mu','b0_rho-_tau',\
+                            'bs_K-_e','bs_K-_mu','bs_K-_tau','bs_K*-_e','bs_K*-_mu','bs_K*-_tau' ]
 # disable Bc until production is sorted out
         tmp = []
         for x in beautyhistograms:
