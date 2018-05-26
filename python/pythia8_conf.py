@@ -276,8 +276,8 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         channels = [ {'id':'411','decay':'d_mu', 'coupling':1,'idlepton':-13},\
                      {'id':'411','decay':'d_e',  'coupling':0,'idlepton':-11},\
                      {'id':'411','decay':'d_tau','coupling':2,'idlepton':-15},\
-                     {'id':'411','decay':'d_K0_e','coupling':0,'idlepton':-11,'idhadron':311},\
-                     {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':311}]
+                     {'id':'411','decay':'d_K0_e','coupling':0,'idlepton':-11,'idhadron':-311},\
+                     {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':-311}]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
         P8gen.List(9900015)
 	if debug: cf.write('P8gen.List(9900015)\n')
