@@ -28,11 +28,11 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
         P8gen.SetParameters("PhotonCollision:gmgm2mumu = on")
         P8gen.SetParameters("PromptPhoton:all = on")
         P8gen.SetParameters("WeakBosonExchange:all = on")
-        
+
     # generate RPV neutralino from inclusive charm hadrons
     if inclusive=="c":
         P8gen.SetParameters("HardQCD::hardccbar  = on")
-	if debug: cf.write('P8gen.SetParameters("HardQCD::hardccbar  = on")\n')
+        if debug: cf.write('P8gen.SetParameters("HardQCD::hardccbar  = on")\n')
         # add RPVSUSY
         rpvsusy_instance = rpvsusy.RPVSUSY(mass, couplings, sfermionmass, benchmark, debug=True)
         ctau = rpvsusy_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
@@ -41,16 +41,16 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
         if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0") \n')
         P8gen.SetParameters("9900015:isResonance = false")
         if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false")\n')
-	P8gen.SetParameters("Next:numberCount    =  0")
+        P8gen.SetParameters("Next:numberCount    =  0")
         if debug: cf.write('P8gen.SetParameters("Next:numberCount    =  0")\n')
         # Configuring decay modes...
         rpvsusy_instance.AddChannelsToPythia(P8gen)
 
         # Finish HNL setup...
         P8gen.SetParameters("9900015:mayDecay = on")
-	if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
         P8gen.SetHNLId(9900015)
-	if debug: cf.write('P8gen.SetHNLId(9900015)\n')
+        if debug: cf.write('P8gen.SetHNLId(9900015)\n')
         # also add to PDG
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         addHNLtoROOT(pid=9900015,m=mass,g=gamma)
@@ -63,63 +63,63 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
            print "No phase space for RPV neutralino from c at this mass:",mass,". Quitting."
            sys.exit()
         totalBR         = gettotalbrrpvsusy(h,charmhistograms,mass,couplings)
-        
+
 
         #overwrite D_s+ decays
         P8gen.SetParameters("431:new  D_s+  D_s-    1   3   0    1.96849"\
                             "    0.00000    0.00000    0.00000  1.49900e-01   0   1   0   1   0")
-	if debug: cf.write('P8gen.SetParameters("431:new  D_s+      D_s-        1 3 0 1.96849'\
+        if debug: cf.write('P8gen.SetParameters("431:new  D_s+      D_s-        1 3 0 1.96849'\
                            '    0.00000 0.00000 0.00000 1.49900e-01 0 1 0 1 0")\n')
         sumBR=0.
         if getbr(h,'ds_mu',mass,couplings[1])>0.:
            P8gen.SetParameters("431:addChannel      1  "+str(getbr(h,'ds_mu',mass,couplings[1])/maxsumBR)+\
                                "    0      -13       9900015")
-	   if debug: cf.write('P8gen.SetParameters("431:addChannel       1  '+\
+           if debug: cf.write('P8gen.SetParameters("431:addChannel       1  '+\
                               str(getbr(h,'ds_mu',mass,couplings[1])/maxsumBR)+'    0      -13       9900015")\n')
            sumBR+=float(getbr(h,'ds_mu',mass,couplings[1])/maxsumBR) 
         if sumBR<1. and sumBR>0.:
             P8gen.SetParameters("431:addChannel      1   "+str(1.-sumBR)+"    0       22      -11")
             if debug: cf.write('P8gen.SetParameters("411:addChannel       1  '+\
                                str(1.-sumBR)+'    0       22      22")\n')
-        
+
         #overwrite D+ decays
         P8gen.SetParameters("411:new  D+ D-    1   3   0    1.86962"\
                             "    0.00000    0.00000    0.00000  3.11800e-01   0   1   0   1   0")
-	if debug: cf.write('P8gen.SetParameters("411:new D+          D-        1 3 0 1.86962'\
+        if debug: cf.write('P8gen.SetParameters("411:new D+          D-        1 3 0 1.86962'\
                            ' 0.00000 0.00000 0.00000 3.11800e-01 0 1 0 1 0")\n')
         sumBR=0.
         if getbr(h,'d_mu',mass,couplings[1])>0.:
            P8gen.SetParameters("411:addChannel      1  "+str(getbr(h,'d_mu',mass,couplings[1])/maxsumBR)+\
                                "    0      -13       9900015")
-	   if debug: cf.write('P8gen.SetParameters("411:addChannel       1  '+\
+           if debug: cf.write('P8gen.SetParameters("411:addChannel       1  '+\
                               str(getbr(h,'d_mu',mass,couplings[1])/maxsumBR)+\
                               '    0      -13       9900015")\n')
            sumBR+=float(getbr(h,'d_mu',mass,couplings[1])/maxsumBR) 
         if sumBR<1. and sumBR>0.:
            P8gen.SetParameters("411:addChannel      1   "+str(1.-sumBR)+"    0       22      -11")
-	   if debug: cf.write('P8gen.SetParameters("411:addChannel       1  '+\
+           if debug: cf.write('P8gen.SetParameters("411:addChannel       1  '+\
                               str(1.-sumBR)+'    0       22      22")\n')
-        
+
         P8gen.List(9900015)
-	if debug: cf.write('P8gen.List(9900015)\n')
+        if debug: cf.write('P8gen.List(9900015)\n')
 
     if inclusive=="b":
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
-	if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
+        if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
         # add RPVSUSY
         rpvsusy_instance = rpvsusy.RPVSUSY(mass, couplings, sfermionmass, benchmark, debug=True)
         ctau = rpvsusy_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
         P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
-	if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0")\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0")\n')
         P8gen.SetParameters("9900015:isResonance = false")
-	if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false"\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false"\n')
         # Configuring decay modes...
         rpvsusy_instance.AddChannelsToPythia(P8gen)
         # Finish HNL setup...
         P8gen.SetParameters("9900015:mayDecay = on")
-	if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
         P8gen.SetHNLId(9900015)
-	if debug: cf.write('P8gen.SetHNLId(9900015)\n')
+        if debug: cf.write('P8gen.SetHNLId(9900015)\n')
         # also add to PDG
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         addHNLtoROOT(pid=9900015,m=mass,g=gamma)
@@ -134,25 +134,25 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
         #overwrite B+ decays
         P8gen.SetParameters("521:new  B+               B-    1   3   0    5.27925"\
                             "0.00000    0.00000    0.00000  4.91100e-01   0   1   0   1   0")
-	if debug: cf.write('P8gen.SetParameters("521:new  B+               B-    1   3   0'\
+        if debug: cf.write('P8gen.SetParameters("521:new  B+               B-    1   3   0'\
                            '5.27925    0.00000    0.00000    0.00000  4.91100e-01   0   1   0   1   0")\n')
         sumBR=0.
         if getbr(h,'b_tau',mass,couplings[1])>0.:
            P8gen.SetParameters("521:addChannel      1  "+\
                                str(getbr(h,'b_tau',mass,couplings[1])/maxsumBR)+"    0       9900015      -15")
-	   if debug: cf.write('P8gen.SetParameters("521:addChannel      1  '+\
+           if debug: cf.write('P8gen.SetParameters("521:addChannel      1  '+\
                               str(getbr(h,'b_tau',mass,couplings[1])/maxsumBR)+'    0       9900015      -15")\n')
            sumBR+=float(getbr(h,'b_tau',mass,couplings[1])/maxsumBR) 
         if sumBR<1. and sumBR>0.:
            P8gen.SetParameters("521:addChannel      1   "+\
                                str(1.-sumBR)+"    0       22      22")
-	   if debug: cf.write('P8gen.SetParameters("521:addChannel      1   '+\
+           if debug: cf.write('P8gen.SetParameters("521:addChannel      1   '+\
                               str(1.-sumBR)+'    0       22      22")\n')
 
         #overwrite B0 decays
         P8gen.SetParameters("511:new  B0  Bbar0    1   0   0    5.27958"\
                             "    0.00000    0.00000    0.00000  4.58700e-01   0   1   0   1   0")
-	if debug: cf.write('P8gen.SetParameters("511:new  B0  Bbar0    1   0   0'\
+        if debug: cf.write('P8gen.SetParameters("511:new  B0  Bbar0    1   0   0'\
                            '    5.27958    0.00000    0.00000    0.00000  4.58700e-01   0   1   0   1   0")\n')
         sumBR=0.
         if getbr(h,'b0_nu_tau',mass,couplings[1])>0.:
@@ -162,14 +162,14 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
         if sumBR<1. and sumBR>0.:
            P8gen.SetParameters("511:addChannel      1   "+\
                                str(1.-sumBR)+"    0       22      22")
-	   if debug: cf.write('P8gen.SetParameters("511:addChannel      1   '+\
+           if debug: cf.write('P8gen.SetParameters("511:addChannel      1   '+\
                               str(1.-sumBR)+'    0       22      22")\n')
-        
+
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
-    
+
     if debug: cf.close()
-    
+
 
 
 
@@ -201,7 +201,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         P8gen.SetParameters("WeakBosonExchange:all = on")
     if inclusive=="c":
         P8gen.SetParameters("HardQCD::hardccbar  = on")
-	if debug: cf.write('P8gen.SetParameters("HardQCD::hardccbar  = on")\n')
+        if debug: cf.write('P8gen.SetParameters("HardQCD::hardccbar  = on")\n')
         # add HNL
         #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
         #mass = 1.0 # GeV
@@ -212,15 +212,15 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0") \n')
         P8gen.SetParameters("9900015:isResonance = false")
         if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false")\n')
-	P8gen.SetParameters("Next:numberCount    =  0")
+        P8gen.SetParameters("Next:numberCount    =  0")
         if debug: cf.write('P8gen.SetParameters("Next:numberCount    =  0")\n')
         # Configuring decay modes...
         readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=False)
         # Finish HNL setup...
         P8gen.SetParameters("9900015:mayDecay = on")
-	if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
         P8gen.SetHNLId(9900015)
-	if debug: cf.write('P8gen.SetHNLId(9900015)\n')
+        if debug: cf.write('P8gen.SetHNLId(9900015)\n')
         # also add to PDG
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         addHNLtoROOT(pid=9900015,m=mass,g=gamma)
@@ -280,26 +280,26 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':-311}]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
         P8gen.List(9900015)
-	if debug: cf.write('P8gen.List(9900015)\n')
+        if debug: cf.write('P8gen.List(9900015)\n')
     if inclusive=="b":
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
-	if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
+        if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
         # add HNL
         #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
         #mass = 1.0 # GeV
         hnl_instance = hnl.HNL(mass, couplings, debug=True)
         ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
         P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
-	if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0")\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0")\n')
         P8gen.SetParameters("9900015:isResonance = false")
-	if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false"\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false"\n')
         # Configuring decay modes...
         readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=True)
         # Finish HNL setup...
         P8gen.SetParameters("9900015:mayDecay = on")
-	if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
+        if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
         P8gen.SetHNLId(9900015)
-	if debug: cf.write('P8gen.SetHNLId(9900015)\n')
+        if debug: cf.write('P8gen.SetHNLId(9900015)\n')
         # also add to PDG
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         addHNLtoROOT(pid=9900015,m=mass,g=gamma)
