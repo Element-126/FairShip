@@ -262,7 +262,9 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         P8gen.SetParameters("431:new  D_s+  D_s-    1   3   0    1.96849    0.00000    0.00000    0.00000  1.49900e-01   0   1   0   1   0")
         channels = [ {'id':'431','decay':'ds_mu', 'coupling':1,'idlepton':-13},\
                      {'id':'431','decay':'ds_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'431','decay':'ds_tau','coupling':2,'idlepton':-15}]
+                     {'id':'431','decay':'ds_tau','coupling':2,'idlepton':-15},\
+                     {'id':'431','decay':'ds_eta_e' ,'coupling':0,'idlepton':-11},\
+                     {'id':'431','decay':'ds_eta_mu','coupling':1,'idlepton':-13} ]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         #overwrite Lambda_c+ decays
@@ -277,7 +279,9 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'411','decay':'d_e',  'coupling':0,'idlepton':-11},\
                      {'id':'411','decay':'d_tau','coupling':2,'idlepton':-15},\
                      {'id':'411','decay':'d_K0_e','coupling':0,'idlepton':-11,'idhadron':-311},\
-                     {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':-311}]
+                     {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':-311},\
+                     {'id':'411','decay':'d_K*bar0_e' ,'coupling':0,'idlepton':-11,'idhadron':-313},\
+                     {'id':'411','decay':'d_K*bar0_mu','coupling':1,'idlepton':-13,'idhadron':-313} ]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
@@ -340,7 +344,10 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'521','decay':'b_D*0_bar_tau',  'coupling':2,'idlepton':-15,'idhadron':-423},\
                      {'id':'521','decay':'b_pi0_e',  'coupling':0,'idlepton':-11,'idhadron':111},\
                      {'id':'521','decay':'b_pi0_mu', 'coupling':1,'idlepton':-13,'idhadron':111},\
-                     {'id':'521','decay':'b_pi0_tau','coupling':2,'idlepton':-15,'idhadron':111}]
+                     {'id':'521','decay':'b_pi0_tau','coupling':2,'idlepton':-15,'idhadron':111},\
+                     {'id':'521','decay':'b_rho0_e',  'coupling':0,'idlepton':-11,'idhadron':113},\
+                     {'id':'521','decay':'b_rho0_mu', 'coupling':1,'idlepton':-13,'idhadron':113},\
+                     {'id':'521','decay':'b_rho0_tau','coupling':2,'idlepton':-15,'idhadron':113} ]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         #overwrite Xi_b0 decays
@@ -357,7 +364,13 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'531','decay':'bs_D_s-_mu',  'coupling':1,'idlepton':-13,'idhadron':-431},\
                      {'id':'531','decay':'bs_D*_s-_mu', 'coupling':1,'idlepton':-13,'idhadron':-433},\
                      {'id':'531','decay':'bs_D_s-_tau', 'coupling':2,'idlepton':-15,'idhadron':-431},\
-                     {'id':'531','decay':'bs_D*_s-_tau','coupling':2,'idlepton':-15,'idhadron':-433} ]
+                     {'id':'531','decay':'bs_D*_s-_tau','coupling':2,'idlepton':-15,'idhadron':-433},\
+                     {'id':'531','decay':'bs_K-_e',     'coupling':0,'idlepton':-11,'idhadron':-321},\
+                     {'id':'531','decay':'bs_K-_mu',    'coupling':1,'idlepton':-13,'idhadron':-321},\
+                     {'id':'531','decay':'bs_K-_tau',   'coupling':2,'idlepton':-15,'idhadron':-321},\
+                     {'id':'531','decay':'bs_K*-_e',    'coupling':0,'idlepton':-11,'idhadron':-323},\
+                     {'id':'531','decay':'bs_K*-_mu',   'coupling':1,'idlepton':-13,'idhadron':-323},\
+                     {'id':'531','decay':'bs_K*-_tau',  'coupling':2,'idlepton':-15,'idhadron':-323} ]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         #overwrite Omega_b- decays
@@ -392,7 +405,10 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'511','decay':'b0_D*-_tau','coupling':2,'idlepton':-15,'idhadron':-413},\
                      {'id':'511','decay':'b0_pi-_e',  'coupling':0,'idlepton':-11,'idhadron':-211},\
                      {'id':'511','decay':'b0_pi-_mu', 'coupling':1,'idlepton':-13,'idhadron':-211},\
-                     {'id':'511','decay':'b0_pi-_tau','coupling':2,'idlepton':-15,'idhadron':-211} ]
+                     {'id':'511','decay':'b0_pi-_tau','coupling':2,'idlepton':-15,'idhadron':-211},\
+                     {'id':'511','decay':'b0_rho-_e',  'coupling':0,'idlepton':-11,'idhadron':-213},\
+                     {'id':'511','decay':'b0_rho-_mu', 'coupling':1,'idlepton':-13,'idhadron':-213},\
+                     {'id':'511','decay':'b0_rho-_tau','coupling':2,'idlepton':-15,'idhadron':-213} ]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         P8gen.List(9900015)
