@@ -105,8 +105,18 @@ def checkChannel(channel):
     """
     lepton_ids = [11, 13, 15]
     lepton_str = ['e', 'mu', 'tau']
-    assert(abs(channel['idlepton']) == lepton_ids[channel['coupling']])
-    assert(channel['decay'].split('_')[-1] == lepton_str[channel['coupling']])
+    success = True
+    if 'decay' in channel:
+        particles = channel['decay'].split('_')
+        parent = particles[0]
+        last_children = particles[-1]
+        if parent != 'tau' and 'coupling' in channel:
+            if 'idlepton' in channel:
+                success = success and abs(channel['idlepton']) == lepton_ids[channel['coupling']]
+            if last_children in lepton_str:
+                success = success and last_children == lepton_str[channel['coupling']]
+    if not success:
+        raise RuntimeError("Consistency checks failed for channel " + str(channel))
 
 def setChannels(P8gen,h,channels,mass,couplings,maxsumBR):
      pdg = P8gen.getPythiaInstance().particleData
