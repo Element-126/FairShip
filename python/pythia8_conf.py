@@ -252,7 +252,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         channels = [ {'id':'15','decay':'tau_pi-', 'coupling':2,'idhadron':-211},\
                      {'id':'15','decay':'tau_K-',  'coupling':2,'idhadron':-321},\
                      {'id':'15','decay':'tau_rho-',  'coupling':2,'idhadron':-213},\
-                     {'id':'15','decay':'tau__nu_e_bar_e',  'coupling':2,'idlepton':11,'idhadron':-12},\
+                     {'id':'15','decay':'tau_nu_e_bar_e',  'coupling':2,'idlepton':11,'idhadron':-12},\
                      {'id':'15','decay':'tau_nu_tau_e',     'coupling':2,'idlepton':11,'idhadron':-16},\
                      {'id':'15','decay':'tau_nu_mu_bar_mu',     'coupling':2,'idlepton':13,'idhadron':-14},\
                      {'id':'15','decay':'tau_nu_tau_mu',     'coupling':2,'idlepton':13,'idhadron':-16}]
