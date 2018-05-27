@@ -236,7 +236,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         #overwrite Xi_c0 decays
         P8gen.SetParameters("4132:new  Xi_c0            Xi_cbar0    2   0   0    2.47088    0.00000    0.00000    0.00000  3.36000e-02   0   1   0   1   0")
         channels = [ {'id':'4132','decay':'xic0_Xi-_e',   'coupling':0,'idlepton':-11,'idhadron':-3312},\
-                     {'id':'4132','decay':'xic0_Xi-_mu',  'coupling':1,'idlepton':-11,'idhadron':-3312}]
+                     {'id':'4132','decay':'xic0_Xi-_mu',  'coupling':1,'idlepton':-13,'idhadron':-3312}]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         #overwrite D0 decays
