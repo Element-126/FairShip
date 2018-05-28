@@ -1,5 +1,6 @@
 import ROOT, os, sys
 import shipunit as u
+import warnings
 
 def addHNLtoROOT(pid=9900015 ,m = 1.0, g=3.654203020370371E-21):
     pdg = ROOT.TDatabasePDG.Instance()
@@ -116,7 +117,7 @@ def checkChannel(channel):
             if last_children in lepton_str:
                 success = success and last_children == lepton_str[channel['coupling']]
     if not success:
-        raise RuntimeError("Consistency checks failed for channel " + str(channel))
+        warnings.warn("Consistency checks failed for channel " + str(channel))
 
 def setChannels(P8gen,h,channels,mass,couplings,maxsumBR):
      pdg = P8gen.getPythiaInstance().particleData
