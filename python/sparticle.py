@@ -242,6 +242,7 @@ class particleInstance(object): # or newParticle()
 		#BR_part = 
 		#Pdecay = 
 		# BRpart_Pdecay = 1 / 
+		BRpart_Pdecay = 1 # FIXME
 		def my_width(): return BRpart_Pdecay * self.couplings[0]**2 * self.pulseS(massH1, massH2) / massH1 # * 2 / 2
 		return my_width
 
@@ -280,7 +281,7 @@ class particleInstance(object): # or newParticle()
 		return my_width
 
 	def getTotalBirthWidth(self):
-		return sum([self.births[channel]() for channel in self.births.values()])
+		return sum([self.births[channel]() for channel in self.births.keys()])
 
 	def getBirthBranching(self, birthChannel): # birthChannel is a string describing the decay, in the form 'stuff0 -> stuff1 ... stuffN + S'
 		totalWidth = self.getTotalBirthWidth()
@@ -303,13 +304,16 @@ class particleInstance(object): # or newParticle()
 			    quit()
 		return sumWidth / totalWidth
 
-	def getMaxSumBirthBranching(self, birthChannels): # birthChannel is a string describing the decay, in the form 'stuff0 -> stuff1 ... stuffN + S'
-		branchings = {}
-		for channel in birthChannels:
-			meson = channel.replace(' -> ',' ').split(' ')[0]
-			if not branchings.has_key(meson): branchings[meson] = 0.
-			else: branchings[meson] += self.getBirthBranching(channel)
-		return max(branchings.values())
+	# def getMaxSumBirthBranching(self, birthChannels): # birthChannel is a string describing the decay, in the form 'stuff0 -> stuff1 ... stuffN + S'
+	# 	branchings = {}
+	# 	for channel in birthChannels:
+	# 		meson = channel.replace(' -> ',' ').split(' ')[0]
+	# 		if not branchings.has_key(meson): branchings[meson] = 0.
+	# 		else: branchings[meson] += self.getBirthBranching(channel)
+	# 	return max(branchings.values())
+
+	def getMaxSumBirthBranching(self, birthChannels):
+		return max(self.getBirthBranching(channel) for channel in birthChannels)
 
 	# DECAYING
 	def decayWidth_to2Leptons(self, lepton1, lepton2):
