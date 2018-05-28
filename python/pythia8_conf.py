@@ -3,6 +3,8 @@ import shipunit as u
 import hnl,rpvsusy
 from pythia8_conf_utils import *
 import readDecayTable
+import readSDecayTable
+import sparticle as sparticles
 
 def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive, deepCopy=False):
     # configure pythia8 for Ship usage
@@ -392,3 +394,135 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
     if debug: cf.close()
+
+
+def configureSparticle(P8gen, mass, couplings, inclusive, deepCopy=False):
+    # configure pythia8 for Ship usage
+    debug=True
+    if debug: cf = open('pythia8_conf.txt','w')
+    P8gen.UseRandom3() # TRandom1 or TRandom3 ?
+    P8gen.SetMom(400)  # beam momentum in GeV 
+    if deepCopy: P8gen.UseDeepCopy()
+    pdg = ROOT.TDatabasePDG.Instance()
+    # let strange particle decay in Geant4
+    p8 = P8gen.getPythiaInstance()
+    n=1
+    while n != 0:
+     n = p8.particleData.nextId(n)
+     p = p8.particleData.particleDataEntryPtr(n)
+     if p.tau0() > 1: 
+      command = str(n) + ":mayDecay = false"
+      p8.readString(command)
+      print "Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name())
+    if inclusive == "True":
+        P8gen.SetParameters("SoftQCD:inelastic = on")
+        P8gen.SetParameters("PhotonCollision:gmgm2mumu = on")
+        P8gen.SetParameters("PromptPhoton:all = on")
+        P8gen.SetParameters("WeakBosonExchange:all = on")
+    if inclusive == "c":
+        P8gen.SetParameters("HardQCD::hardccbar  = on")
+	if debug: cf.write('P8gen.SetParameters("HardQCD::hardccbar  = on")\n')
+        # ADDING S-PARTICLEs
+        #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
+        #mass = 1.0 # GeV
+        sparticle = sparticles.particleInstance(mass, couplings, debug=True)
+        ctau = sparticle.computeNLifetime(system="FairShip") * u.c_light * u.cm
+        print "S-particle ctau", ctau
+        P8gen.SetParameters("9900055:new = S5 S5 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
+        if debug: cf.write('P8gen.SetParameters("9900055:new = S5 S5 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0") \n')
+        P8gen.SetParameters("9900055:isResonance = false")
+        if debug: cf.write('P8gen.SetParameters("9900055:isResonance = false")\n')
+	P8gen.SetParameters("Next:numberCount    =  0")
+        if debug: cf.write('P8gen.SetParameters("Next:numberCount    =  0")\n')
+        # Configuring decay modes...
+        readSDecayTable.addSparticleDecayChannels(P8gen, sparticle, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection_sparticle.conf'), verbose=False)
+        # Finish S-particle setup...
+        P8gen.SetParameters("9900055:mayDecay = on")
+	if debug: cf.write('P8gen.SetParameters("9900055:mayDecay = on")\n')
+        P8gen.SetHNLId(9900055) # P8gen.SetSparticleId needed?
+	if debug: cf.write('P8gen.SetHNLId(9900055)\n')
+        # Also adding to PDG...
+        gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
+        sparticles.addSparticleToROOT(pid=9900055, m=mass, g=gamma)
+        #? 12 14 16 neutrinos replace with N2
+	# check on any phase space available
+	charmBirths = ['D -> S e nu']
+        # no tau decay here to consider # totaltauBR = 0.0
+        maxSumBranchings = sparticle.getMaxSumBirthBranching(charmBirths)
+        if maxSumBranchings == 0.:
+           print "No phase space for S-particle from c at this mass:", mass, ". Quitting."
+           sys.exit()
+        #sumBranchings = sparticle.getSumBirthBranching(charmBirths)
+	# OVERWRITING DECAYS WITH ACCOUNT OF S-PARTICLE
+        # overwriting D+ decays...
+        P8gen.SetParameters("411:new D+ D- 1 3 0 1.86962 0.00000 0.00000 0.00000 3.11800e-01 0 1 0 1 0")
+	if debug: cf.write('P8gen.SetParameters("411:new D+ D- 1 3 0 1.86962 0.00000 0.00000 0.00000 3.11800e-01 0 1 0 1 0")\n')
+        bufBranching = 0.
+	branching = sparticle.getBirthBranching('D -> S e nu')
+        if branching > 0.:
+           P8gen.SetParameters("411:addChannel 1 " + str(branching/maxSumBranchings) + " 0 -13 9900055")
+	   if debug: cf.write('P8gen.SetParameters("411:addChannel 1 ' + str(branching/maxSumBranchings) + ' 0 -13 9900055")\n')
+           bufBranching += float(branching/maxSumBranchings) 
+        if 0. < bufBranching < 1.:
+           P8gen.SetParameters("411:addChannel 1 " + str(1. - bufBranching) + " 0 22 -11")
+	   if debug: cf.write('P8gen.SetParameters("411:addChannel 1 ' + str(1. - bufBranching) + ' 0 22 22")\n')
+	#? listing something
+        P8gen.List(9900055)
+	if debug: cf.write('P8gen.List(9900055)\n')
+    if inclusive == "b":
+        P8gen.SetParameters("HardQCD::hardbbbar  = on")
+	if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
+        # ADDING S-PARTICLEs
+        #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
+        #mass = 1.0 # GeV
+        sparticle = sparticles.particleInstance(mass, couplings, debug=True)
+        ctau = sparticle.computeNLifetime(system="FairShip") * u.c_light * u.cm
+        P8gen.SetParameters("9900055:new = S5 S5 2 0 0 " + str(mass) + " 0.0 0.0 0.0 " + str(ctau/u.mm) + " 0 1 0 1 0") 
+	if debug: cf.write('P8gen.SetParameters("9900055:new = S5 S5 2 0 0 ' + str(mass) + ' 0.0 0.0 0.0 ' + str(ctau/u.mm) + ' 0 1 0 1 0")\n')
+        P8gen.SetParameters("9900055:isResonance = false")
+	if debug: cf.write('P8gen.SetParameters("9900055:isResonance = false"\n')
+        # Configuring decay modes...
+        readSDecayTable.addSparticleDecayChannels(P8gen, sparticle, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection_sparticle.conf'), verbose=True)
+        # Finish HNL setup...
+        P8gen.SetParameters("9900055:mayDecay = on")
+	if debug: cf.write('P8gen.SetParameters("9900055:mayDecay = on")\n')
+        P8gen.SetHNLId(9900055)
+	if debug: cf.write('P8gen.SetHNLId(9900055)\n')
+        # Also adding to PDG...
+        gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
+        sparticles.addSparticleToROOT(pid=9900055,m=mass,g=gamma)
+        #? 12 14 16 neutrinos replace with N2
+	# check on any phase space available
+	beautyBirths = ['B+ -> K+ S','B0 -> K0L S','B0 -> K0S S','B+ -> S pi+','B0 -> S pi0']
+        maxSumBranchings = sparticle.getMaxSumBirthBranching(beautyBirths)
+        if maxSumBranchings == 0.:
+           print "No phase space for S-particle from b at this mass:", mass, ". Quitting."
+           sys.exit()
+        #sumBranchings = sparticle.getSumBirthBranching(beautyBirths)
+	# OVERWRITING DECAYS WITH ACCOUNT OF S-PARTICLE
+        # overwriting B+ decays...
+        P8gen.SetParameters("521:new B+ B- 1 3 0 5.27925 0.00000    0.00000    0.00000  4.91100e-01   0   1   0   1   0")
+	if debug: cf.write('P8gen.SetParameters("521:new B+ B- 1 3 0 5.27925 0.00000 0.00000 0.00000 4.91100e-01 0 1 0 1 0")\n')
+        bufBranching = 0.
+	branching = sparticle.getBirthBranching('B+ -> K+ S')
+        if branching > 0.:
+           P8gen.SetParameters("521:addChannel 1 " + str(branching/maxSumBranchings) + " 0 9900055 -15")
+	   if debug: cf.write('P8gen.SetParameters("521:addChannel 1  ' + str(branching/maxSumBranchings)+' 0 9900055 -15")\n')
+           bufBranching += float(branching/maxSumBranchings) 
+        if 0. < bufBranching < 1.:
+           P8gen.SetParameters("521:addChannel 1 " + str(1. - bufBranching) + " 0 22 22")
+	   if debug: cf.write('P8gen.SetParameters("521:addChannel 1 ' + str(1. - bufBranching) + ' 0 22 22")\n')
+        # overwriting B0 decays...
+        P8gen.SetParameters("511:new B0 Bbar0 1 0 0 5.27958 0.00000 0.00000 0.00000 4.58700e-01 0 1 0 1 0")
+	if debug: cf.write('P8gen.SetParameters("511:new B0 Bbar0 1 0 0 5.27958 0.00000 0.00000 0.00000 4.58700e-01 0 1 0 1 0")\n')
+        bufBranching = 0.
+	branching = sparticle.getBirthBranching('B0 -> K0L S')
+        if branching > 0.:
+           P8gen.SetParameters("511:addChannel 1 " + str(branching/maxSumBranchings) + " 22 9900055 16")
+        if 0. < bufBranching < 1.:
+           P8gen.SetParameters("511:addChannel 1 " + str(1. - bufBranching) + " 0 22 22")
+	   if debug: cf.write('P8gen.SetParameters("511:addChannel 1 ' + str(1. - bufBranching) + ' 0 22 22")\n')
+	# listing something
+        P8gen.List(9900055)
+        if debug: cf.write('P8gen.List(9900055)\n')
+	if debug: cf.close()

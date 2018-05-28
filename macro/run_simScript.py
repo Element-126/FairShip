@@ -15,6 +15,10 @@ theCouplings = [0.447e-9, 7.15e-9, 1.88e-9] # ctau=53.3km  TP default for HNL
 theDPmass = 0.2*u.GeV
 theDPepsilon = 0.00000008
 
+# Default S-particle parameters
+theSmass = 0.365*u.GeV
+theSCouplings = [1.7678622795749257e-20] # 1.7678622795749257e-20 ?
+
 mcEngine     = "TGeant4"
 simEngine    = "Pythia8"  # "Genie" # Ntuple
 nEvents      = 100
@@ -29,6 +33,7 @@ charmonly    = False  # option to be set with -A to enable only charm decays, ch
 HNL          = True
 DarkPhoton   = False
 RPVSUSY      = False
+SPARTICLE    = False
 RPVSUSYbench = 2
 
 eventDisplay = False
@@ -66,7 +71,7 @@ try:
                                    "PG","Pythia6","Pythia8","Genie","MuDIS","Ntuple","Nuage","MuonBack","FollowMuon","FastMuon",\
                                    "Cosmics=","nEvents=", "display", "seed=", "firstEvent=", "phiRandom", "mass=", "couplings=", "coupling=", "epsilon=",\
                                    "output=","tankDesign=","muShieldDesign=","NuRadio","test",\
-                                   "DarkPhoton","RpvSusy","SusyBench=","sameSeed=","charm=","nuTauTargetDesign=","caloDesign=","strawDesign="])
+                                   "DarkPhoton","RpvSusy","Scalar","SusyBench=","sameSeed=","charm=","nuTauTargetDesign=","caloDesign=","strawDesign="])
 
 except getopt.GetoptError:
         # print help information and exit:
@@ -77,6 +82,7 @@ except getopt.GetoptError:
         print '       --MuonBack to generate events from muon background file, --Cosmics=0 for cosmic generator data'  
         print '       --RpvSusy to generate events based on RPV neutralino (default HNL)'
         print '       --DarkPhoton to generate events with dark photons (default HNL)'
+        print '       --Scalar to generate event with the scalar portal (default HNL)'
         print ' for darkphoton generation, use -A meson or -A pbrem or -A qcd'
         print '       --SusyBench to specify which of the preset benchmarks to generate (default 2)'
         print '       --mass or -m to set HNL or New Particle mass'
@@ -160,18 +166,27 @@ for o, a in opts:
         if o in ("--DarkPhoton",):
             HNL = False
             DarkPhoton = True
+        if o in ("--Scalar",):
+            HNL = False
+            SPARTICLE = True
         if o in ("--SusyBench",):
             RPVSUSYbench = int(a)
         if o in ("-m", "--mass",):
            if DarkPhoton: theDPmass = float(a)
+           elif SPARTICLE: theSmass = float(a)
            else: theMass = float(a)
         if o in ("-c", "--couplings", "--coupling",):
-           theCouplings = [float(c) for c in a.split(",")]
+           theCouplings = theSCouplings= [float(c) for c in a.split(",")]
         if o in ("-e", "--epsilon",):
            theDPepsilon = float(a)
         if o in ("-t", "--test"):
             inputFile = "../FairShip/files/Cascade-parp16-MSTP82-1-MSEL4-76Mpot_1_5000.root"
             nEvents = 50
+
+# Set parameters for non-default models
+if SPARTICLE:
+    theMass = theSmass
+    theCouplings = theSCouplings
 
 #sanity check
 if (HNL and RPVSUSY) or (HNL and DarkPhoton) or (DarkPhoton and RPVSUSY): 
@@ -249,7 +264,7 @@ primGen = ROOT.FairPrimaryGenerator()
 if simEngine == "Pythia8":
  primGen.SetTarget(ship_geo.target.z0, 0.) 
 # -----Pythia8--------------------------------------
- if HNL or RPVSUSY:
+ if HNL or RPVSUSY or SPARTICLE:
   P8gen = ROOT.HNLPythia8Generator()
   import pythia8_conf
   if HNL:
@@ -262,6 +277,10 @@ if simEngine == "Pythia8":
    print 'and with stop mass=\%.3f GeV\n',theCouplings[2]
    pythia8_conf.configurerpvsusy(P8gen,theMass,[theCouplings[0],theCouplings[1]],
                                 theCouplings[2],RPVSUSYbench,'c',deepCopy)
+  if SPARTICLE:
+   print 'Generating S-particle events of mass %.3f GeV\n'%theMass
+   print 'and with couplings=',theCouplings
+   pythia8_conf.configureSparticle(P8gen,theMass,theCouplings,inclusive,deepCopy) # inclusive? deepCopy?
   P8gen.SetSmearBeam(1*u.cm) # finite beam size
   P8gen.SetParameters("ProcessLevel:all = off")
   if ds==7: # short muon shield
@@ -536,6 +555,7 @@ print ' '
 print "Macro finished succesfully." 
 if "P8gen" in globals() : 
 	if (HNL): print "number of retries, events without HNL ",P8gen.nrOfRetries()
+	elif SPARTICLE: print "number of retries, events without S-particles ",P8gen.nrOfRetries()
 	elif (DarkPhoton): 
 		print "number of retries, events without Dark Photons ",P8gen.nrOfRetries()
 		print "total number of dark photons (including multiple meson decays per single collision) ",P8gen.nrOfDP()
