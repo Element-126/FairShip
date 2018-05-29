@@ -211,8 +211,8 @@ class particleInstance(object): # or newParticle()
 		else: return 0.# None
 		
 	def computeNLifetime(self, system="SI"): # system: choose between default (i.e. SI, result in s) or FairShip (result in ns)
-		if system == "FairShip": return 1.e9 * CONSTS.toSI_GeV * self.lifetime
-		else: return CONSTS.toSI_GeV * self.lifetime
+		if system == "FairShip": return 1.e9 * self.lifetime
+		else: return self.lifetime
 
 	# BIRTH
 	def pulseS(self, massH1, massH2):
