@@ -233,7 +233,8 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         if maxsumBR==0.:
            print "No phase space for HNL from c at this mass:",mass,". Quitting."
            sys.exit()
-        totalBR=gettotalbr(h,charmhistograms,mass,couplings,totaltauBR)
+        # FIXME: this variable is unused
+        totalBR=gettotalbr(h,charmhistograms,mass,couplings,totaltauBR) # FIXME
         #overwrite Xi_c0 decays
         P8gen.SetParameters("4132:new  Xi_c0            Xi_cbar0    2   0   0    2.47088    0.00000    0.00000    0.00000  3.36000e-02   0   1   0   1   0")
         channels = [ {'id':'4132','decay':'xic0_Xi-_e',   'coupling':0,'idlepton':-11,'idhadron':-3312},\
@@ -329,7 +330,8 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         if maxsumBR==0.:
            print "No phase space for HNL from b at this mass:",mass,". Quitting."
            sys.exit()
-        totalBR=gettotalbr(h,beautyhistograms,mass,couplings,0.)
+        # FIXME: this variable is unused
+        totalBR=gettotalbr(h,beautyhistograms,mass,couplings,0.) # FIXME
         #overwrite Lambda_b0 decays
         P8gen.SetParameters("5122:new  Lambda_b0        Lambda_bbar0    2   0   0    5.61940    0.00000    0.00000    0.00000  3.69000e-01   0   1   0   1   0")
         channels = [ {'id':'5122','decay':'lambdab_Lambda_c+_e','coupling':0,'idlepton':11,'idhadron':4122},\

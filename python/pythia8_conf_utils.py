@@ -29,6 +29,8 @@ def readFromAscii(filename="branchingratios"):
 
 def getbr(h,histoname,mass,coupling):
     #0 MeV< mass < 3.200 GeV 
+    # FIXME: the above assumption is not valid anymore
+    # FIXME: assert that bin width == 1 MeV
     mass = int(mass*1000) 
     try:
         br=h[histoname].GetBinContent(mass)
@@ -39,6 +41,7 @@ def getbr(h,histoname,mass,coupling):
 
 def getmaxsumbr(h,histograms,mass,couplings,totaltaubr):
     #0 MeV< mass < 3.200 GeV 
+    # FIXME: the above assumption is not valid anymore
     maxsumbr=0.0
     sumbrs={}
     brdstauadded=0
@@ -79,6 +82,9 @@ def getmaxsumbrrpvsusy(h,histograms,mass,couplings):
     return maxsumbr
 
 def gettotalbr(h,histograms,mass,couplings,totaltaubr):
+    # FIXME: this function does not handle couplings correctly.
+    # It should use the channel dictionary instead of parsing the histogram
+    # string, which can lead to a misidentification of the coupling.
     totalbr=0.0 
     leptons=['e','mu','tau'] 
     for histoname in histograms: 
