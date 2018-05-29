@@ -227,7 +227,8 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         # 12 14 16 neutrinos replace with N2
         charmhistograms = ['ds_e','d_e','d0_K-_e','d0_K*-_e','d_K0_e','lambdac_Lambda0_e','xic0_Xi-_e','ds_mu','d_mu','d0_K-_mu','d_K0_mu','d0_K*-_mu','lambdac_Lambda0_mu','xic0_Xi-_mu','d_tau','ds_tau','ds_eta_e','ds_eta_mu','d_K*bar0_e','d_K*bar0_mu']
         tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
-        totaltauBR=gettotalbr(h,tauhistograms,mass,couplings,0.)
+        BrDs2tauSM = 0.0548
+        totaltauBR=BrDs2tauSM * gettotalbr(h,tauhistograms,mass,couplings,0.) # FIXME
         maxsumBR=getmaxsumbr(h,charmhistograms,mass,couplings,totaltauBR)
         if maxsumBR==0.:
            print "No phase space for HNL from c at this mass:",mass,". Quitting."
@@ -264,7 +265,8 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'431','decay':'ds_e',  'coupling':0,'idlepton':-11},\
                      {'id':'431','decay':'ds_tau','coupling':2,'idlepton':-15},\
                      {'id':'431','decay':'ds_eta_e' ,'coupling':0,'idlepton':-11},\
-                     {'id':'431','decay':'ds_eta_mu','coupling':1,'idlepton':-13} ]
+                     {'id':'431','decay':'ds_eta_mu','coupling':1,'idlepton':-13},\
+                     {'id':'431','decay':'ds_production_tau','coupling':2,'idlepton':-15}]
         setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
 
         #overwrite Lambda_c+ decays

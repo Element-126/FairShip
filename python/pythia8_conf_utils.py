@@ -57,7 +57,7 @@ def getmaxsumbr(h,histograms,mass,couplings,totaltaubr):
        sumbrs[meson]+=getbr(h,histoname,mass,coupling)
        if meson=="ds" and brdstauadded==0 and totaltaubr>0.:
           sumbrs[meson]+=totaltaubr
-	  brdstauadded=1       	  
+          brdstauadded=1       	  
     maxsumbr=max(sumbrs.values())
     return maxsumbr
 
@@ -120,28 +120,39 @@ def checkChannel(channel):
         warnings.warn("Consistency checks failed for channel " + str(channel))
 
 def setChannels(P8gen,h,channels,mass,couplings,maxsumBR):
-     pdg = P8gen.getPythiaInstance().particleData
-     sumBR = 0
-     for channel in channels:
-         checkChannel(channel)
-         br = getbr(h,channel['decay'],mass,couplings[channel['coupling']])
-         if br>0:
-           if channel['id']=='15':
-            if len(channel)==4:
-             P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"    1521       9900015      "+str(channel['idhadron']))
-            else:
-             P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"    1531       9900015      "+str(channel['idlepton'])+" "+str(channel['idhadron']))
-           elif len(channel)==4:
-            P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"    0       9900015      "+str(channel['idlepton']))
-           else:
-            P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"   22      "+str(channel['idlepton'])+"       9900015   "+str(channel['idhadron']))
-           sumBR+=br/maxsumBR
-     if sumBR<1. and sumBR>0.:
-           charge = pdg.charge(int(channel['id']))
-           if charge>0:
-            P8gen.SetParameters("431:addChannel      1   "+str(1.-sumBR)+"    0       22      -11")
-           elif charge<0:
-            P8gen.SetParameters("431:addChannel      1   "+str(1.-sumBR)+"    0       22       11")
-           else:
+    pdg = P8gen.getPythiaInstance().particleData
+    sumBR = 0
+    for channel in channels:
+        if channel['decay']=="ds_production_tau":
+            tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
+            BrDs2tauSM = 0.0548
+            totaltauBR=BrDs2tauSM * gettotalbr(h,tauhistograms,mass,couplings,0.) # FIXME
+            P8gen.SetParameters("431:addChannel      1  "+str(totaltauBR/maxsumBR)+"    0      -15       16")
+            sumBR+=totaltauBR/maxsumBR
+        else:
+            checkChannel(channel)
+            br = getbr(h,channel['decay'],mass,couplings[channel['coupling']])
+            if br>0:
+                if channel['id']=='15':
+                    tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
+                    totaltauBR=gettotalbr(h,tauhistograms,mass,couplings,0.) # FIXME
+                    if len(channel)==4:
+                        P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/totaltauBR)+"    1521       9900015      "+str(channel['idhadron']))
+                    else:
+                        P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/totaltauBR)+"    1531       9900015      "+str(channel['idlepton'])+" "+str(channel['idhadron']))
+                    sumBR+=br/totaltauBR
+                elif len(channel)==4:
+                    P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"    0       9900015      "+str(channel['idlepton']))
+                    sumBR+=br/maxsumBR
+                else:
+                    P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"   22      "+str(channel['idlepton'])+"       9900015   "+str(channel['idhadron']))
+                    sumBR+=br/maxsumBR
+    if sumBR<1. and sumBR>0.:
+        charge = pdg.charge(int(channel['id']))
+        if charge>0:
+            P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22      -11")
+        elif charge<0:
+            P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22       11")
+        else:
             P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22      22")
 
