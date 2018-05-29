@@ -90,11 +90,17 @@ def gettotalbr(h,histograms,mass,couplings,totaltaubr):
     for histoname in histograms: 
        item = histoname.split('_') 
        lepton = item[len(item)-1]
-       try:
-          coupling=couplings[leptons.index(lepton)] 
-       except:
-          coupling=couplings[2] 
-       if histoname[:3]=='tau': coupling=couplings[2] 
+       # FIXME: Workaround to use the correct couplings for tau decays
+       if histoname == 'tau_nu_tau_e':
+           coupling = couplings[0]
+       elif histoname == 'tau_nu_tau_mu':
+           coupling = couplings[1]
+       else:
+           try:
+               coupling=couplings[leptons.index(lepton)]
+           except:
+               coupling=couplings[2]
+               if histoname[:3]=='tau': coupling=couplings[2]
        totalbr+=getbr(h,histoname,mass,coupling)
     return totalbr
 
