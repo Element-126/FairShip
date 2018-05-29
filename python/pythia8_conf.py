@@ -175,7 +175,7 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
 
 
 
-def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
+def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, deepCopy=False):
     # configure pythia8 for Ship usage
     debug=True
     if debug: cf=open('pythia8_conf.txt','w')
@@ -205,7 +205,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         # add HNL
         #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
         #mass = 1.0 # GeV
-        hnl_instance = hnl.HNL(mass, couplings, debug=True)
+        hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
         ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
         print "HNL ctau",ctau
         P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
@@ -228,18 +228,18 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         charmhistograms = ['ds_e','d_e','d0_K-_e','d0_K*-_e','d_K0_e','lambdac_Lambda0_e','xic0_Xi-_e','ds_mu','d_mu','d0_K-_mu','d_K0_mu','d0_K*-_mu','lambdac_Lambda0_mu','xic0_Xi-_mu','d_tau','ds_tau','ds_eta_e','ds_eta_mu','d_K*bar0_e','d_K*bar0_mu']
         tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
         BrDs2tauSM = 0.0548
-        totaltauBR=BrDs2tauSM * gettotalbr(h,tauhistograms,mass,couplings,0.) # FIXME
-        maxsumBR=getmaxsumbr(h,charmhistograms,mass,couplings,totaltauBR)
+        totaltauBR=BrDs2tauSM * gettotalbr(h,tauhistograms,mass,production_couplings,0.) # FIXME
+        maxsumBR=getmaxsumbr(h,charmhistograms,mass,production_couplings,totaltauBR)
         if maxsumBR==0.:
            print "No phase space for HNL from c at this mass:",mass,". Quitting."
            sys.exit()
         # FIXME: this variable is unused
-        totalBR=gettotalbr(h,charmhistograms,mass,couplings,totaltauBR) # FIXME
+        totalBR=gettotalbr(h,charmhistograms,mass,production_couplings,totaltauBR) # FIXME
         #overwrite Xi_c0 decays
         P8gen.SetParameters("4132:new  Xi_c0            Xi_cbar0    2   0   0    2.47088    0.00000    0.00000    0.00000  3.36000e-02   0   1   0   1   0")
         channels = [ {'id':'4132','decay':'xic0_Xi-_e',   'coupling':0,'idlepton':-11,'idhadron':-3312},\
                      {'id':'4132','decay':'xic0_Xi-_mu',  'coupling':1,'idlepton':-13,'idhadron':-3312}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite D0 decays
         P8gen.SetParameters("421:new  D0  Dbar0    1   0   0    1.86486    0.00000    0.00000    0.00000  1.22900e-01   0   1   0   1   0")
@@ -247,7 +247,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'421','decay':'d0_K*-_e',  'coupling':0,'idlepton':-11,'idhadron':-323},\
                      {'id':'421','decay':'d0_K-_mu',  'coupling':1,'idlepton':-13,'idhadron':-321},\
                      {'id':'421','decay':'d0_K*-_mu', 'coupling':1,'idlepton':-13,'idhadron':-323}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite tau- decays
         P8gen.SetParameters("15:new  tau-  tau+    2   -3   0    1.77682    0.00000    0.00000    0.00000  8.71100e-02   0   1   0   1   0")
@@ -258,7 +258,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'15','decay':'tau_nu_tau_e',     'coupling':0,'idlepton':11,'idhadron':+16},\
                      {'id':'15','decay':'tau_nu_mu_bar_mu',     'coupling':2,'idlepton':13,'idhadron':-14},\
                      {'id':'15','decay':'tau_nu_tau_mu',     'coupling':1,'idlepton':13,'idhadron':+16}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite D_s+ decays
         P8gen.SetParameters("431:new  D_s+  D_s-    1   3   0    1.96849    0.00000    0.00000    0.00000  1.49900e-01   0   1   0   1   0")
@@ -268,13 +268,13 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'431','decay':'ds_eta_e' ,'coupling':0,'idlepton':-11},\
                      {'id':'431','decay':'ds_eta_mu','coupling':1,'idlepton':-13},\
                      {'id':'431','decay':'ds_production_tau','coupling':2,'idlepton':-15}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite Lambda_c+ decays
         P8gen.SetParameters("4122:new  Lambda_c+   Lambda_cbar-    2   3   0    2.28646    0.00000    0.00000    0.00000  5.99000e-02   0   1   0   1   0")
         channels = [ {'id':'4122','decay':'lambdac_Lambda0_e', 'coupling':0,'idlepton':-11,'idhadron':3122},\
                      {'id':'4122','decay':'lambdac_Lambda0_mu', 'coupling':1,'idlepton':-13,'idhadron':3122}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite D+ decays
         P8gen.SetParameters("411:new  D+ D-    1   3   0    1.86962    0.00000    0.00000    0.00000  3.11800e-01   0   1   0   1   0")
@@ -285,7 +285,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':-311},\
                      {'id':'411','decay':'d_K*bar0_e' ,'coupling':0,'idlepton':-11,'idhadron':-313},\
                      {'id':'411','decay':'d_K*bar0_mu','coupling':1,'idlepton':-13,'idhadron':-313} ]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
     if inclusive=="b":
@@ -294,7 +294,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
         # add HNL
         #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
         #mass = 1.0 # GeV
-        hnl_instance = hnl.HNL(mass, couplings, debug=True)
+        hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
         ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
         P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
         if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0")\n')
@@ -326,18 +326,18 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
            if  x[:2]=='bc': continue
            tmp.append(x)
         beautyhistograms = tmp
-        maxsumBR=getmaxsumbr(h,beautyhistograms,mass,couplings,0.)
+        maxsumBR=getmaxsumbr(h,beautyhistograms,mass,production_couplings,0.)
         if maxsumBR==0.:
            print "No phase space for HNL from b at this mass:",mass,". Quitting."
            sys.exit()
         # FIXME: this variable is unused
-        totalBR=gettotalbr(h,beautyhistograms,mass,couplings,0.) # FIXME
+        totalBR=gettotalbr(h,beautyhistograms,mass,production_couplings,0.) # FIXME
         #overwrite Lambda_b0 decays
         P8gen.SetParameters("5122:new  Lambda_b0        Lambda_bbar0    2   0   0    5.61940    0.00000    0.00000    0.00000  3.69000e-01   0   1   0   1   0")
         channels = [ {'id':'5122','decay':'lambdab_Lambda_c+_e','coupling':0,'idlepton':11,'idhadron':4122},\
                      {'id':'5122','decay':'lambdab_Lambda_c+_mu','coupling':1,'idlepton':13,'idhadron':4122},\
                      {'id':'5122','decay':'lambdab_Lambda_c+_tau','coupling':2,'idlepton':15,'idhadron':4122}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite B+ decays
         P8gen.SetParameters("521:new  B+               B-    1   3   0    5.27925    0.00000    0.00000    0.00000  4.91100e-01   0   1   0   1   0")
@@ -356,14 +356,14 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'521','decay':'b_rho0_e',  'coupling':0,'idlepton':-11,'idhadron':113},\
                      {'id':'521','decay':'b_rho0_mu', 'coupling':1,'idlepton':-13,'idhadron':113},\
                      {'id':'521','decay':'b_rho0_tau','coupling':2,'idlepton':-15,'idhadron':113} ]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite Xi_b0 decays
         P8gen.SetParameters("5232:new  Xi_b0            Xi_bbar0    2   0   0    5.78800    0.00000    0.00000    0.00000  3.64000e-01   0   1   0   1   0")
         channels = [ {'id':'5232','decay':'Xib_Xi_c+_tau','coupling':2,'idlepton':-15},\
                      {'id':'5232','decay':'Xib_Xi_c+_mu','coupling':1,'idlepton':-13},\
                      {'id':'5232','decay':'Xib_Xi_c+_e','coupling':0,'idlepton':-11}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite B_s0 decays
         P8gen.SetParameters("531:new  B_s0             B_sbar0    1   0   0    5.36677    0.00000    0.00000    0.00000  4.39000e-01   0   1   0   1   0")
@@ -379,14 +379,14 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'531','decay':'bs_K*-_e',    'coupling':0,'idlepton':-11,'idhadron':-323},\
                      {'id':'531','decay':'bs_K*-_mu',   'coupling':1,'idlepton':-13,'idhadron':-323},\
                      {'id':'531','decay':'bs_K*-_tau',  'coupling':2,'idlepton':-15,'idhadron':-323} ]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite Omega_b- decays
         P8gen.SetParameters("5332:new  Omega_b-         Omega_bbar+    2   -3   0    6.07000    0.00000    0.00000    0.00000  3.64000e-01   0   1   0   1   0")
         channels = [ {'id':'5332','decay':'Omega_b-_tau','coupling':2,'idlepton':-15},\
                      {'id':'5332','decay':'Omega_b-_mu','coupling':1,'idlepton':-13},\
                      {'id':'5332','decay':'Omega_b-_e','coupling':0,'idlepton':-11}]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite B_c+ decays
         P8gen.SetParameters("541:new  B_c+             B_c-    1   3   0    6.27700    0.00000    0.00000    0.00000  1.38000e-01   0   1   0   1   0")
@@ -401,7 +401,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'541','decay':'bc_B*0_mu',  'coupling':1,'idlepton':-13,'idhadron':513},\
                      {'id':'541','decay':'bc_B_s0_mu', 'coupling':1,'idlepton':-13,'idhadron':531},\
                      {'id':'541','decay':'bc_B*_s0_mu','coupling':1,'idlepton':-13,'idhadron':533} ]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         #overwrite B0 decays
         P8gen.SetParameters("511:new  B0  Bbar0    1   0   0    5.27958    0.00000    0.00000    0.00000  4.58700e-01   0   1   0   1   0")
@@ -417,7 +417,7 @@ def configure(P8gen, mass, couplings, inclusive, deepCopy=False):
                      {'id':'511','decay':'b0_rho-_e',  'coupling':0,'idlepton':-11,'idhadron':-213},\
                      {'id':'511','decay':'b0_rho-_mu', 'coupling':1,'idlepton':-13,'idhadron':-213},\
                      {'id':'511','decay':'b0_rho-_tau','coupling':2,'idlepton':-15,'idhadron':-213} ]
-        setChannels(P8gen,h,channels,mass,couplings,maxsumBR)
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
