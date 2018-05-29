@@ -426,34 +426,19 @@ class particleInstance(object): # or newParticle()
 		    print 'sparticle.particleInstance.getDecayBranching ERROR: unknown decay %s'%decayChannel
 		    quit()
 
-#	def allowedDecays(self): # Returns a dictionary of kinematically allowed decay channels
-#		m = self.mass
-#		channels = []
-#		if m <= 0.768310546875:
-#			if m <= 2.*CONSTS.mass_e: channels.append('S -> e+ e-')
-#			if m <= 2.*CONSTS.mass_mu: channels.append('S -> mu+ mu-')
-#			if m < 0.2780188156668123 or m <= 2.*CONSTS.mass_pi0: channels.append('S -> pi0 pi0')
-#		elif m <= 10:
-#			if m <= 2.*CONSTS.mass_tau: channels.append('S -> tau+ tau-')
-#			if m <= 2.*CONSTS.mass_mu: channels.append('S -> mu+ mu-')
-#			if m <= 2.*CONSTS.mass_s: channels.append('S -> s s_bar')
-#			if m <= 2.*CONSTS.mass_D0: channels.append('S -> c c_bar')
-#			if m <= 2.*CONSTS.mass_s: channels.append('S -> g g')
-#		return channels
-
 	def allowedChannels(self): # allowedDecays # Returns a dictionary of kinematically allowed decay channels
 		m = self.mass
 		channels = {}
 		if m <= 0.768310546875:
-			if m <= 2.*CONSTS.mass_e: channels.update({'S -> e+ e-':'yes'})
-			if m <= 2.*CONSTS.mass_mu: channels.update({'S -> mu+ mu-':'yes'})
-			if m < 0.2780188156668123 or m <= 2.*CONSTS.mass_pi0: channels.update({'S -> pi0 pi0':'yes'})
+			if m >= 2.*CONSTS.mass_e: channels.update({'S -> e+ e-':'yes'})
+			if m >= 2.*CONSTS.mass_mu: channels.update({'S -> mu+ mu-':'yes'})
+			if m > 0.2780188156668123 or m >= 2.*CONSTS.mass_pi0: channels.update({'S -> pi0 pi0':'yes'})
 		elif m <= 10:
-			if m <= 2.*CONSTS.mass_tau: channels.update({'S -> tau+ tau-':'yes'})
-			if m <= 2.*CONSTS.mass_mu: channels.update({'S -> mu+ mu-':'yes'})
-			if m <= 2.*CONSTS.mass_s: channels.update({'S -> s s_bar':'yes'})
-			if m <= 2.*CONSTS.mass_D0: channels.update({'S -> c c_bar':'yes'})
-			if m <= 2.*CONSTS.mass_s: channels.update({'S -> g g':'yes'})
+			if m >= 2.*CONSTS.mass_tau: channels.update({'S -> tau+ tau-':'yes'})
+			if m >= 2.*CONSTS.mass_mu: channels.update({'S -> mu+ mu-':'yes'})
+			if m >= 2.*CONSTS.mass_s: channels.update({'S -> s s_bar':'yes'})
+			if m >= 2.*CONSTS.mass_D0: channels.update({'S -> c c_bar':'yes'})
+			if m >= 2.*CONSTS.mass_s: channels.update({'S -> g g':'yes'})
 		return channels
 
 
