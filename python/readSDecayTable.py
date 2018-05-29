@@ -74,13 +74,8 @@ def addSparticleDecayChannels(P8Gen, sparticle, conffile=os.path.expandvars('$FA
             childrenCodes = [PDGcode(p) for p in children]
             # BR = sparticle.findBranchingRatio(dec)
             BR = sparticle.getDecayBranching(dec)
-            # Take care of Majorana modes
-            BR = BR/2.
             codes = ' '.join([str(code) for code in childrenCodes])
             P8Gen.SetParameters("9900055:addChannel =  1 " + str(BR) + " 0 " + codes)
-            # Charge conjugate modes
-            codes = ' '.join([(str(-1*code) if pdg.GetParticle(-code) != None else str(code)) for code in childrenCodes])
-            P8Gen.SetParameters("9900055:addChannel = 1 " + str(BR) + " 0 " + codes)
             # print "debug readdecay table",particles,children,BR
 
 if __name__ == '__main__':
