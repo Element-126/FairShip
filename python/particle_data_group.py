@@ -24,7 +24,7 @@ def PDGname(particle): # PDGname(String particle)
     elif 'top' in particle: return 't'
     if '1' in particle: particle = particle.replace('1',"'") # why ???!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (not (('-' in particle) or ('+' in particle) or ('0' in particle) or ('nu_' in particle) or ('eta' in particle))
-        and (particle not in ['d','u','s','c','b','t','d_bar','u_bar','s_bar','c_bar','b_bar','t_bar'])):
+        and (particle not in ['d','u','s','c','b','t','g','d_bar','u_bar','s_bar','c_bar','b_bar','t_bar'])):
         particle += '+'
     return particle
 
