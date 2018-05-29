@@ -25,7 +25,10 @@ def PDGcode(particle):
     """
     particle = PDGname(particle)
     tPart = pdg.GetParticle(particle)
-    return int(tPart.PdgCode())
+    if tPart != None:
+        return int(tPart.PdgCode())
+    else:
+        raise ValueError("Particle " + str(particle) + " not found in PDG")
 
 
 def load(conffile = os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=True):
@@ -67,6 +70,7 @@ def addSparticleDecayChannels(P8Gen, sparticle, conffile=os.path.expandvars('$FA
         if allowed[dec] == 'yes' and wanted[dec] == 'yes':
             particles = [p for p in dec.replace('->',' ').split()]
             children = particles[1:]
+            print(children)
             childrenCodes = [PDGcode(p) for p in children]
             # BR = sparticle.findBranchingRatio(dec)
             BR = sparticle.getDecayBranching(dec)
