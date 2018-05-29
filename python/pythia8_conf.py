@@ -288,6 +288,7 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
         setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
+
     if inclusive=="b":
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
         if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
@@ -311,21 +312,16 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
         gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
         addHNLtoROOT(pid=9900015,m=mass,g=gamma)
         # 12 14 16 neutrinos replace with N2
-        beautyhistograms = ['bc_tau','b_D*0_bar_tau','bs_D_s-_tau','b_tau','lambdab_Lambda_c+_tau','Xib_Xi_c+_tau',\
-                            'Omega_b-_tau','b0_D*-_tau','bs_D*_s-_tau','b_D0_bar_tau','b0_D-_tau','b_e','bc_e','b_D*0_bar_e',\
-                            'b_D0_bar_e','b0_D*-_e','b0_D-_e','bs_D_s-_e','bs_D*_s-_e','bc_B_s0_e','bc_B0_e','bc_B*0_e','bc_B*_s0_e',\
-                            'lambdab_Lambda_c+_e','Xib_Xi_c+_e','Omega_b-_e','b_mu','bc_mu','b_D*0_bar_mu','b_D0_bar_mu','b0_D-_mu',\
-                            'b0_D*-_mu','bs_D_s-_mu','bs_D*_s-_mu','bc_B_s0_mu','bc_B0_mu','bc_B*0_mu','bc_B*_s0_mu',\
+        beautyhistograms = ['b_D*0_bar_tau','bs_D_s-_tau','b_tau','lambdab_Lambda_c+_tau','Xib_Xi_c+_tau',\
+                            'Omega_b-_tau','b0_D*-_tau','bs_D*_s-_tau','b_D0_bar_tau','b0_D-_tau','b_e','b_D*0_bar_e',\
+                            'b_D0_bar_e','b0_D*-_e','b0_D-_e','bs_D_s-_e','bs_D*_s-_e',\
+                            'lambdab_Lambda_c+_e','Xib_Xi_c+_e','Omega_b-_e','b_mu','b_D*0_bar_mu','b_D0_bar_mu','b0_D-_mu',\
+                            'b0_D*-_mu','bs_D_s-_mu','bs_D*_s-_mu',\
                             'lambdab_Lambda_c+_mu','Xib_Xi_c+_mu','Omega_b-_mu',\
                             'b_pi0_e','b_pi0_mu','b_pi0_tau','b0_pi-_e','b0_pi-_mu','b0_pi-_tau',\
                             'b_rho0_e','b_rho0_mu','b_rho0_tau','b0_rho-_e','b0_rho-_mu','b0_rho-_tau',\
                             'bs_K-_e','bs_K-_mu','bs_K-_tau','bs_K*-_e','bs_K*-_mu','bs_K*-_tau' ]
-# disable Bc until production is sorted out
-        tmp = []
-        for x in beautyhistograms:
-           if  x[:2]=='bc': continue
-           tmp.append(x)
-        beautyhistograms = tmp
+
         maxsumBR=getmaxsumbr(h,beautyhistograms,mass,production_couplings,0.)
         if maxsumBR==0.:
            print "No phase space for HNL from b at this mass:",mass,". Quitting."
@@ -388,21 +384,6 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
                      {'id':'5332','decay':'Omega_b-_e','coupling':0,'idlepton':-11}]
         setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
-        #overwrite B_c+ decays
-        P8gen.SetParameters("541:new  B_c+             B_c-    1   3   0    6.27700    0.00000    0.00000    0.00000  1.38000e-01   0   1   0   1   0")
-        channels = [ {'id':'541','decay':'bc_tau','coupling':2,'idlepton':-15},\
-                     {'id':'541','decay':'bc_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'541','decay':'bc_mu', 'coupling':1,'idlepton':-13},\
-                     {'id':'541','decay':'bc_B0_e',    'coupling':0,'idlepton':-11,'idhadron':511},\
-                     {'id':'541','decay':'bc_B*0_e',   'coupling':0,'idlepton':-11,'idhadron':513},\
-                     {'id':'541','decay':'bc_B_s0_e',  'coupling':0,'idlepton':-11,'idhadron':531},\
-                     {'id':'541','decay':'bc_B*_s0_e', 'coupling':0,'idlepton':-11,'idhadron':533},\
-                     {'id':'541','decay':'bc_B0_mu',   'coupling':1,'idlepton':-13,'idhadron':511},\
-                     {'id':'541','decay':'bc_B*0_mu',  'coupling':1,'idlepton':-13,'idhadron':513},\
-                     {'id':'541','decay':'bc_B_s0_mu', 'coupling':1,'idlepton':-13,'idhadron':531},\
-                     {'id':'541','decay':'bc_B*_s0_mu','coupling':1,'idlepton':-13,'idhadron':533} ]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
-
         #overwrite B0 decays
         P8gen.SetParameters("511:new  B0  Bbar0    1   0   0    5.27958    0.00000    0.00000    0.00000  4.58700e-01   0   1   0   1   0")
         channels = [ {'id':'511','decay':'b0_D-_e',   'coupling':0,'idlepton':-11,'idhadron':-411},\
@@ -421,4 +402,52 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
 
         P8gen.List(9900015)
         if debug: cf.write('P8gen.List(9900015)\n')
+
+    if inclusive=="bc":
+        P8gen.SetParameters("HardQCD::hardbbbar  = on")
+        if debug: cf.write('P8gen.SetParameters("HardQCD::hardbbbar  = on")\n')
+        # add HNL
+        hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
+        ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
+        P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
+        if debug: cf.write('P8gen.SetParameters("9900015:new = N2 N2 2 0 0 '+str(mass)+' 0.0 0.0 0.0 '+str(ctau/u.mm)+'  0   1   0   1   0")\n')
+        P8gen.SetParameters("9900015:isResonance = false")
+        if debug: cf.write('P8gen.SetParameters("9900015:isResonance = false"\n')
+        # Configuring decay modes...
+        readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=True)
+        # Finish HNL setup...
+        P8gen.SetParameters("9900015:mayDecay = on")
+        if debug: cf.write('P8gen.SetParameters("9900015:mayDecay = on")\n')
+        P8gen.SetHNLId(9900015)
+        if debug: cf.write('P8gen.SetHNLId(9900015)\n')
+        # also add to PDG
+        gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
+        addHNLtoROOT(pid=9900015,m=mass,g=gamma)
+        # 12 14 16 neutrinos replace with N2
+        bc_histograms = ['bc_e','bc_mu','bc_tau','bc_B0_e','bc_B0_mu','bc_B_s0_e','bc_B_s0_mu','bc_B*0_e','bc_B*0_mu','bc_B*_s0_e','bc_B*_s0_mu']
+        maxsumBR=getmaxsumbr(h,bc_histograms,mass,production_couplings,0.)
+        if maxsumBR==0.:
+           print "No phase space for HNL from bc at this mass:",mass,". Quitting."
+           sys.exit()
+        # FIXME: this variable is unused
+        totalBR=gettotalbr(h,bc_histograms,mass,production_couplings,0.) # FIXME
+
+        #overwrite B_c+ decays
+        P8gen.SetParameters("541:new  B_c+             B_c-    1   3   0    6.27700    0.00000    0.00000    0.00000  1.38000e-01   0   1   0   1   0")
+        channels = [ {'id':'541','decay':'bc_tau','coupling':2,'idlepton':-15},\
+                     {'id':'541','decay':'bc_e',  'coupling':0,'idlepton':-11},\
+                     {'id':'541','decay':'bc_mu', 'coupling':1,'idlepton':-13},\
+                     {'id':'541','decay':'bc_B0_e',    'coupling':0,'idlepton':-11,'idhadron':511},\
+                     {'id':'541','decay':'bc_B*0_e',   'coupling':0,'idlepton':-11,'idhadron':513},\
+                     {'id':'541','decay':'bc_B_s0_e',  'coupling':0,'idlepton':-11,'idhadron':531},\
+                     {'id':'541','decay':'bc_B*_s0_e', 'coupling':0,'idlepton':-11,'idhadron':533},\
+                     {'id':'541','decay':'bc_B0_mu',   'coupling':1,'idlepton':-13,'idhadron':511},\
+                     {'id':'541','decay':'bc_B*0_mu',  'coupling':1,'idlepton':-13,'idhadron':513},\
+                     {'id':'541','decay':'bc_B_s0_mu', 'coupling':1,'idlepton':-13,'idhadron':531},\
+                     {'id':'541','decay':'bc_B*_s0_mu','coupling':1,'idlepton':-13,'idhadron':533} ]
+        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+
+        P8gen.List(9900015)
+        if debug: cf.write('P8gen.List(9900015)\n')
+
     if debug: cf.close()
