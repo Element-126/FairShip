@@ -137,11 +137,8 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
     if debug: pythia_log.close()
 
 
-
-
-
-
 def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, deepCopy=False, debug=True):
+
     # Wrap the Pythia8 object into a class logging all of its method calls
     if debug:
         pythia_log=open('pythia8_conf.txt','w')
@@ -154,30 +151,22 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
     pdg = ROOT.TDatabasePDG.Instance()
     # let strange particle decay in Geant4
     make_particles_stable(P8gen, above_lifetime=1)
+
+    # Inclusive
+    # =========
+
     if inclusive=="True":
         P8gen.SetParameters("SoftQCD:inelastic = on")
         P8gen.SetParameters("PhotonCollision:gmgm2mumu = on")
         P8gen.SetParameters("PromptPhoton:all = on")
         P8gen.SetParameters("WeakBosonExchange:all = on")
+
+    # Charm decays only
+    # =================
+
     if inclusive=="c":
         P8gen.SetParameters("HardQCD::hardccbar  = on")
-        # add HNL
-        #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
-        #mass = 1.0 # GeV
-        hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
-        ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
-        print "HNL ctau",ctau
-        P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
-        P8gen.SetParameters("9900015:isResonance = false")
-        P8gen.SetParameters("Next:numberCount    =  0")
-        # Configuring decay modes...
-        readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=False)
-        # Finish HNL setup...
-        P8gen.SetParameters("9900015:mayDecay = on")
-        P8gen.SetHNLId(9900015)
-        # also add to PDG
-        gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
-        addHNLtoROOT(pid=9900015,m=mass,g=gamma)
+        add_hnl(P8gen, mass, decay_couplings)
         # 12 14 16 neutrinos replace with N2
         charmhistograms = ['ds_e','d_e','d0_K-_e','d0_K*-_e','d_K0_e','lambdac_Lambda0_e','xic0_Xi-_e','ds_mu','d_mu','d0_K-_mu','d_K0_mu','d0_K*-_mu','lambdac_Lambda0_mu','xic0_Xi-_mu','d_tau','ds_tau','ds_eta_e','ds_eta_mu','d_K*bar0_e','d_K*bar0_mu']
         tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
@@ -242,23 +231,12 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
         setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
         P8gen.List(9900015)
 
+    # Beauty decays only
+    # ==================
+
     if inclusive=="b":
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
-        # add HNL
-        #ctau = 5.4E+06 # for tests use 5.4E+03  # nominal ctau = 54 km = 5.4E+06 cm = 5.4E+07 mm
-        #mass = 1.0 # GeV
-        hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
-        ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
-        P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
-        P8gen.SetParameters("9900015:isResonance = false")
-        # Configuring decay modes...
-        readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=True)
-        # Finish HNL setup...
-        P8gen.SetParameters("9900015:mayDecay = on")
-        P8gen.SetHNLId(9900015)
-        # also add to PDG
-        gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
-        addHNLtoROOT(pid=9900015,m=mass,g=gamma)
+        add_hnl(P8gen, mass, decay_couplings)
         # 12 14 16 neutrinos replace with N2
         beautyhistograms = ['b_D*0_bar_tau','bs_D_s-_tau','b_tau','lambdab_Lambda_c+_tau','Xib_Xi_c+_tau',\
                             'Omega_b-_tau','b0_D*-_tau','bs_D*_s-_tau','b_D0_bar_tau','b0_D-_tau','b_e','b_D*0_bar_e',\
@@ -350,21 +328,12 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
 
         P8gen.List(9900015)
 
+    # Bc decays only
+    # ==============
+
     if inclusive=="bc":
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
-        # add HNL
-        hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
-        ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
-        P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0") 
-        P8gen.SetParameters("9900015:isResonance = false")
-        # Configuring decay modes...
-        readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=True)
-        # Finish HNL setup...
-        P8gen.SetParameters("9900015:mayDecay = on")
-        P8gen.SetHNLId(9900015)
-        # also add to PDG
-        gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
-        addHNLtoROOT(pid=9900015,m=mass,g=gamma)
+        add_hnl(P8gen, mass, decay_couplings)
         # 12 14 16 neutrinos replace with N2
         bc_histograms = ['bc_e','bc_mu','bc_tau','bc_B0_e','bc_B0_mu','bc_B_s0_e','bc_B_s0_mu','bc_B*0_e','bc_B*0_mu','bc_B*_s0_e','bc_B*_s0_mu']
         maxsumBR=getmaxsumbr(h,bc_histograms,mass,production_couplings,0.)
@@ -392,3 +361,21 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
         P8gen.List(9900015)
 
     if debug: pythia_log.close()
+
+
+# Factor out the code needed to add the HNL to Pythia and ROOT
+def add_hnl(P8gen, mass, decay_couplings):
+    hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
+    ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
+    print "HNL ctau",ctau
+    P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0")
+    P8gen.SetParameters("9900015:isResonance = false")
+    P8gen.SetParameters("Next:numberCount    =  0")
+    # Configuring decay modes...
+    readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=False)
+    # Finish HNL setup...
+    P8gen.SetParameters("9900015:mayDecay = on")
+    P8gen.SetHNLId(9900015)
+    # also add to PDG
+    gamma = u.hbarc / float(ctau) #197.3269631e-16 / float(ctau) # hbar*c = 197 MeV*fm = 197e-16 GeV*cm
+    addHNLtoROOT(pid=9900015,m=mass,g=gamma)
