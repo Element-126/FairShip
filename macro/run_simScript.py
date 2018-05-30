@@ -169,6 +169,8 @@ for o, a in opts:
         if o in ("--Scalar",):
             HNL = False
             SPARTICLE = True
+            inclusive = 'b'
+            inputFile = "/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root"
         if o in ("--SusyBench",):
             RPVSUSYbench = int(a)
         if o in ("-m", "--mass",):
