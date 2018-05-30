@@ -153,15 +153,7 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
     if deepCopy: P8gen.UseDeepCopy()
     pdg = ROOT.TDatabasePDG.Instance()
     # let strange particle decay in Geant4
-    p8 = P8gen.getPythiaInstance()
-    n=1
-    while n!=0:
-     n = p8.particleData.nextId(n)
-     p = p8.particleData.particleDataEntryPtr(n)
-     if p.tau0()>1: 
-      command = str(n)+":mayDecay = false"
-      p8.readString(command)
-      print "Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name())
+    make_particles_stable(P8gen, above_lifetime=1)
     if inclusive=="True":
         P8gen.SetParameters("SoftQCD:inelastic = on")
         P8gen.SetParameters("PhotonCollision:gmgm2mumu = on")

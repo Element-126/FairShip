@@ -168,3 +168,13 @@ def setChannels(P8gen,h,channels,mass,couplings,maxsumBR):
         else:
             P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22      22")
 
+def make_particles_stable(P8gen, above_lifetime):
+    p8 = P8gen.getPythiaInstance()
+    n=1
+    while n!=0:
+        n = p8.particleData.nextId(n)
+        p = p8.particleData.particleDataEntryPtr(n)
+        if p.tau0() > above_lifetime:
+            command = str(n)+":mayDecay = false"
+            p8.readString(command)
+            print "Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name())
