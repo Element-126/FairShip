@@ -506,19 +506,20 @@ def configureSparticle(P8gen, mass, couplings, inclusive, deepCopy=False):
         bufBranching = 0.
 	branching = sparticle.getBirthBranching('B+ -> K+ S')
         if branching > 0.:
-           P8gen.SetParameters("521:addChannel 1 " + str(branching/maxSumBranchings) + " 0 9900055 -15")
-	   if debug: cf.write('P8gen.SetParameters("521:addChannel 1  ' + str(branching/maxSumBranchings)+' 0 9900055 -15")\n')
            bufBranching += float(branching/maxSumBranchings) 
+            P8gen.SetParameters("521:addChannel 1 " + str(branching/maxSumBranchings) + " 0 9900055 321")
+            if debug: cf.write('P8gen.SetParameters("521:addChannel 1  ' + str(branching/maxSumBranchings)+' 0 9900055 321")\n')
         if 0. < bufBranching < 1.:
-           P8gen.SetParameters("521:addChannel 1 " + str(1. - bufBranching) + " 0 22 22")
-	   if debug: cf.write('P8gen.SetParameters("521:addChannel 1 ' + str(1. - bufBranching) + ' 0 22 22")\n')
+            P8gen.SetParameters("521:addChannel 1 " + str(1. - bufBranching) + " 0 22 22")
+            if debug: cf.write('P8gen.SetParameters("521:addChannel 1 ' + str(1. - bufBranching) + ' 0 22 22")\n')
         # overwriting B0 decays...
         P8gen.SetParameters("511:new B0 Bbar0 1 0 0 5.27958 0.00000 0.00000 0.00000 4.58700e-01 0 1 0 1 0")
 	if debug: cf.write('P8gen.SetParameters("511:new B0 Bbar0 1 0 0 5.27958 0.00000 0.00000 0.00000 4.58700e-01 0 1 0 1 0")\n')
         bufBranching = 0.
 	branching = sparticle.getBirthBranching('B0 -> K0L S')
         if branching > 0.:
-           P8gen.SetParameters("511:addChannel 1 " + str(branching/maxSumBranchings) + " 22 9900055 16")
+            P8gen.SetParameters("511:addChannel 1 " + str(branching/maxSumBranchings) + " 22 9900055 130")
+            if debug: cf.write('P8gen.SetParameters("511:addChannel 1 ' + str(branching/maxSumBranchings) + ' 22 9900055 130")')
         if 0. < bufBranching < 1.:
            P8gen.SetParameters("511:addChannel 1 " + str(1. - bufBranching) + " 0 22 22")
 	   if debug: cf.write('P8gen.SetParameters("511:addChannel 1 ' + str(1. - bufBranching) + ' 0 22 22")\n')
