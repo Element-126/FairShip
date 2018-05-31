@@ -248,3 +248,43 @@ def get_br(histograms, channel, mass, couplings):
     coupling = couplings[channel['coupling']]
     normalized_br = hist(mass)
     return normalized_br * coupling
+
+def get_branching_ratios(histograms, channels, mass, couplings, scale=False):
+    """
+    Query the branching ratios for the passed channels, for a given mass and
+    set of couplings.
+
+    If the option `scale` is set to true, the branching ratios are rescaled in
+    order to make the event generation more efficient.
+    """
+    branching_ratios = { ch['decay']: get_br(histograms, ch, mass, couplings)
+                         for ch in channels }
+    if scale:
+        branching_ratios = scale_branching_ratios(branching_ratios, channels)
+    return branching_ratios
+
+def scale_branching_ratios(branching_ratios, channels):
+    """
+    Rescale the branching ratios to optimize the event generation.
+
+    This function rescales the passed branching ratios in order to make the
+    event generation as efficient as possible when studying very rare processes,
+    while enforcing the invariant that any inclusive branching ratio must
+    remain lower that unity.
+
+    This is accomplished by computing, for each particle, the total branching
+    ratio to processes of interest, and then dividing all branching ratios by
+    the highest of those.
+    """
+    # Total branching ratios for each particle
+    total_brs = {}
+    for ch in channels:
+        if ch['id'] not in total_brs:
+            total_brs[ch['id']] = 0
+        total_brs[ch['id']] += branching_ratios[ch['decay']]
+    # Find the maximum total branching ratio (over all particles)
+    max_total_br = max(total_brs.values())
+    # Compute and apply the scaling factor
+    scaling_factor = 1 / max_total_br
+    return { decay: br * scaling_factor
+             for (decay, br) in six.iteritems(branching_ratios) }
