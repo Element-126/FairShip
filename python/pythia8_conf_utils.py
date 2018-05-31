@@ -1,6 +1,8 @@
-import ROOT, os, sys
+import os, sys, warnings, re
+import six
+import numpy as np
+import ROOT
 import shipunit as u
-import warnings
 
 def addHNLtoROOT(pid=9900015 ,m = 1.0, g=3.654203020370371E-21):
     pdg = ROOT.TDatabasePDG.Instance()
@@ -178,3 +180,47 @@ def make_particles_stable(P8gen, above_lifetime):
             command = str(n)+":mayDecay = false"
             p8.readString(command)
             print "Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name())
+
+def parse_histograms(filepath):
+    """
+    This function parses a file containing histograms of branching ratios.
+
+    It places them in a dictionary indexed by the decay string (e.g. 'd_K0_e'),
+    as a pair (mass, branching ratio), where the mass is expressed in GeV.
+    """
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+    # Define regular expressions matching (sub-)headers and data lines
+    th1f_exp      = re.compile(r'^TH1F\|.+')
+    header_exp    = re.compile(r'^TH1F\|(.+?)\|BR/U2(.+?)\|HNL mass \(GeV\)\|$')
+    subheader_exp = re.compile(r'^\s*?(\d+?),\s*(\d+?\.\d+?),\s*(\d+\.\d+)\s*$')
+    data_exp      = re.compile(r'^\s*(\d+?)\s*,\s*(\d+\.\d+)\s*$')
+    # Locate beginning of each histogram
+    header_line_idx = [i for i in range(len(lines)) if th1f_exp.match(lines[i]) is not None]
+    # Iterate over histograms
+    histograms = {}
+    for offset in header_line_idx:
+        # Parse header
+        mh = header_exp.match(lines[offset])
+        if mh is None or len(mh.groups()) != 2:
+            raise ValueError("Malformed header encountered: {0}".format(lines[offset]))
+        decay_code = mh.group(1)
+        # Parse sub-header (min/max mass and number of points)
+        ms = subheader_exp.match(lines[offset+1])
+        if ms is None or len(ms.groups()) != 3:
+            raise ValueError("Malformed sub-header encountered: {0}".format(lines[offset+1]))
+        npoints  = int(ms.group(1))
+        min_mass = float(ms.group(2))
+        max_mass = float(ms.group(3))
+        masses = np.linspace(min_mass, max_mass, npoints, endpoint=False)
+        branching_ratios = np.zeros(npoints)
+        # Now read the data lines (skipping the two header lines)
+        for line in lines[offset+2:offset+npoints+1]:
+            md = data_exp.match(line)
+            if md is None or len(md.groups()) != 2:
+                raise ValueError("Malformed data row encountered: {0}".format(line))
+            idx = int(md.group(1))
+            br  = float(md.group(2))
+            branching_ratios[idx] = br
+        histograms[decay_code] = (masses, branching_ratios)
+    return histograms
