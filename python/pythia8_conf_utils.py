@@ -1,6 +1,7 @@
 import os, sys, warnings, re
 import six
 import numpy as np
+import scipy.interpolate
 import ROOT
 import shipunit as u
 
@@ -224,3 +225,26 @@ def parse_histograms(filepath):
             branching_ratios[idx] = br
         histograms[decay_code] = (masses, branching_ratios)
     return histograms
+
+def build_histograms(filepath):
+    """
+    This function reads a file containing branching ratio histograms, and
+    returns a dictionary of linear interpolators of the branching ratios,
+    indexed by the decay string.
+    """
+    histogram_data = parse_histograms(filepath)
+    histograms = {}
+    for (hist_string, (masses, br)) in six.iteritems(histogram_data):
+        histograms[hist_string] = scipy.interpolate.interp1d(
+            masses, br, kind='linear', bounds_error=False, fill_value=0, assume_sorted=True)
+    return histograms
+
+def get_br(histograms, channel, mass, couplings):
+    """
+    Utility function used to reliably query the branching ratio for a given
+    channel at a given mass, taking into account the correct coupling.
+    """
+    hist = histograms[channel['decay']]
+    coupling = couplings[channel['coupling']]
+    normalized_br = hist(mass)
+    return normalized_br * coupling
