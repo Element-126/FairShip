@@ -288,3 +288,92 @@ def scale_branching_ratios(branching_ratios, channels):
     scaling_factor = 1 / max_total_br
     return { decay: br * scaling_factor
              for (decay, br) in six.iteritems(branching_ratios) }
+
+class SimpleDecay(object):
+    """
+    A simple decay A -> X...
+    """
+    def __init__(self, parent, children, branching_ratio):
+        self._parent = parent
+        self._children = children
+        self._branching_ratio = branching_ratio
+
+    def parent(self):
+        return self._parent
+
+    def children(self):
+        return self._children
+
+    def branching_ratio(self):
+        return self._branching_ratio
+
+    def __str__(self):
+        return '{0} -> {1}'.format(self._parent, ' '.join(
+            str(ch) for ch in self._children))
+
+class DecayChain(object):
+    """
+    A decay chain: A -> X... B (B -> Y... C (C -> Z...))
+
+    This corresponds to one branch of the decay tree, and is implemented as a
+    list of SimpleDecay's, where the parent of decay n+1 is a children for
+    decay n, domino style.
+    """
+    def __init__(self, decays):
+        self._decays = decays
+        for n in range(len(decays)-1):
+            if abs(decays[n+1].parent()) not in np.abs(decays[n].children()):
+                raise ValueError('Non-connected decay chain ({0})'.format(str(self)))
+
+    def parent(self):
+        "Return the parent of the topmost decay."
+        return self._decays[0].parent()
+
+    def children(self):
+        "Return the children of the last decay in the chain."
+        return self._decays[-1].children()
+
+    def branching_ratio(self):
+        "Returns the branching ratio for the full decay chain."
+        return np.prod([decay.branching_ratio() for decay in self._decays])
+
+    def append(self, decay):
+        "Appends one decay at the end of the decay chain, after checking consistency."
+        if len(self._decays) > 0 and abs(decay.parent()) not in np.abs(self._decays[-1].children()):
+            raise ValueError(
+                'Refusing to create inconsistent decay chain from {0} and {1}'.format(
+                    str(self), str(decay)))
+        if isinstance(decay, SimpleDecay):
+            self._decays.append(decay)
+        elif isinstance(decay, DecayChain):
+            self._decays.extend(decay._decays)
+        else:
+            raise ValueError('Cannot extend decay chain with {0}'.format(str(decay)))
+
+    def __str__(self):
+        return '({0})'.format(') => ('.join(str(d) for d in self._decays))
+
+def build_channel(channel, histograms, mass, couplings):
+    if channel['decay'] == 'sm':
+        decay = build_sm_channel(channel)
+    else:
+        decay = build_bsm_channel(channel, histograms, mass, couplings)
+    return decay
+
+def build_sm_channel(channel):
+    return SimpleDecay(channel['id'], channel['children'], channel['br'])
+
+def build_bsm_channel(channel, histograms, mass, couplings):
+    """
+    Parse a channel into a SimpleDecay instance.
+    """
+    br = get_br(histograms, channel, mass, couplings)
+    parent = channel['id']
+    children = []
+    if 'idhadron' in channel:
+        children.append(channel['idhadron'])
+    if 'idlepton' in channel:
+        children.append(channel['idlepton'])
+    if len(children) <= 0:
+        raise ValueError("No children found for decay channel {0}".format(channel['decay']))
+    return SimpleDecay(parent, children, br)
