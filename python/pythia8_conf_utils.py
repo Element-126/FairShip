@@ -361,3 +361,7 @@ def add_particles(P8gen, particles, data):
                              .format(particle, datafile))
         # Add the particle
         P8gen.SetParameters(particle['cmd'])
+
+def print_scaling_factor(scaling_factor):
+    "Prints the scaling factor used to make event generation more efficient."
+    print("One HNL produced for each {0:.4g} meson decays".format(scaling_factor))

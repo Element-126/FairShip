@@ -221,6 +221,8 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
            print("No phase space for HNL from c at this mass: {0}. Quitting.".format(mass))
            sys.exit()
 
+        print_scaling_factor(1/max_total_br)
+
         # Add charm decays
         for ch in c_channels:
             add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
@@ -268,6 +270,8 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
            print("No phase space for HNL from b at this mass: {0}. Quitting.".format(mass))
            sys.exit()
 
+        print_scaling_factor(1/max_total_br)
+
         # Add beauty decays
         for ch in b_channels:
             add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
@@ -300,6 +304,8 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
         if max_total_br <= 0:
            print("No phase space for HNL from bc at this mass: {0}. Quitting.".format(mass))
            sys.exit()
+
+        print_scaling_factor(1/max_total_br)
 
         # Add B_c+/- decays
         for ch in bc_channels:
