@@ -1,5 +1,5 @@
 from __future__ import print_function
-import os, sys, warnings, re
+import os, re
 import six
 import numpy as np
 import scipy.interpolate
