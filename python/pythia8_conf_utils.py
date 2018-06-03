@@ -42,31 +42,6 @@ def getbr(h,histoname,mass,coupling):
         br=0
     return br
 
-def getmaxsumbr(h,histograms,mass,couplings,totaltaubr):
-    #0 MeV< mass < 3.200 GeV 
-    # FIXME: the above assumption is not valid anymore
-    maxsumbr=0.0
-    sumbrs={}
-    brdstauadded=0
-    leptons=['e','mu','tau'] 
-    for histoname in histograms:
-       item = histoname.split('_') 
-       lepton = item[len(item)-1]
-       meson = item[0]
-       try:
-          coupling=couplings[leptons.index(lepton)]
-       except:
-          coupling=couplings[2] 
-       if histoname[:3]=='tau': 
-          coupling=couplings[2]
-       if not sumbrs.has_key(meson):sumbrs[meson]=0
-       sumbrs[meson]+=getbr(h,histoname,mass,coupling)
-       if meson=="ds" and brdstauadded==0 and totaltaubr>0.:
-          sumbrs[meson]+=totaltaubr
-          brdstauadded=1       	  
-    maxsumbr=max(sumbrs.values())
-    return maxsumbr
-
 def getmaxsumbrrpvsusy(h,histograms,mass,couplings):
     #0 MeV< mass < 3.200 GeV 
     maxsumbr=0.0
@@ -84,29 +59,6 @@ def getmaxsumbrrpvsusy(h,histograms,mass,couplings):
     maxsumbr=max(sumbrs.values())
     return maxsumbr
 
-def gettotalbr(h,histograms,mass,couplings,totaltaubr):
-    # FIXME: this function does not handle couplings correctly.
-    # It should use the channel dictionary instead of parsing the histogram
-    # string, which can lead to a misidentification of the coupling.
-    totalbr=0.0 
-    leptons=['e','mu','tau'] 
-    for histoname in histograms: 
-       item = histoname.split('_') 
-       lepton = item[len(item)-1]
-       # FIXME: Workaround to use the correct couplings for tau decays
-       if histoname == 'tau_nu_tau_e':
-           coupling = couplings[0]
-       elif histoname == 'tau_nu_tau_mu':
-           coupling = couplings[1]
-       else:
-           try:
-               coupling=couplings[leptons.index(lepton)]
-           except:
-               coupling=couplings[2]
-               if histoname[:3]=='tau': coupling=couplings[2]
-       totalbr+=getbr(h,histoname,mass,coupling)
-    return totalbr
-
 def gettotalbrrpvsusy(h,histograms,mass,couplings):
     totalbr=0.0 
     for histoname in histograms: 
@@ -114,62 +66,6 @@ def gettotalbrrpvsusy(h,histograms,mass,couplings):
        coupling=couplings[1]
        totalbr+=getbr(h,histoname,mass,coupling)
     return totalbr
-
-def checkChannel(channel):
-    """
-    Checks consistency between decay channel, lepton ID and coupling.
-    """
-    lepton_ids = [11, 13, 15]
-    lepton_str = ['e', 'mu', 'tau']
-    success = True
-    if 'decay' in channel:
-        particles = channel['decay'].split('_')
-        parent = particles[0]
-        last_children = particles[-1]
-        if parent != 'tau' and 'coupling' in channel:
-            if 'idlepton' in channel:
-                success = success and abs(channel['idlepton']) == lepton_ids[channel['coupling']]
-            if last_children in lepton_str:
-                success = success and last_children == lepton_str[channel['coupling']]
-    if not success:
-        warnings.warn("Consistency checks failed for channel " + str(channel))
-
-def setChannels(P8gen,h,channels,mass,couplings,maxsumBR):
-    pdg = P8gen.getPythiaInstance().particleData
-    sumBR = 0
-    for channel in channels:
-        if channel['decay']=="ds_production_tau":
-            tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
-            BrDs2tauSM = 0.0548
-            totaltauBR=BrDs2tauSM * gettotalbr(h,tauhistograms,mass,couplings,0.) # FIXME
-            P8gen.SetParameters("431:addChannel      1  "+str(totaltauBR/maxsumBR)+"    0      -15       16")
-            sumBR+=totaltauBR/maxsumBR
-        else:
-            checkChannel(channel)
-            br = getbr(h,channel['decay'],mass,couplings[channel['coupling']])
-            if br>0:
-                if channel['id']=='15':
-                    tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
-                    totaltauBR=gettotalbr(h,tauhistograms,mass,couplings,0.) # FIXME
-                    if len(channel)==4:
-                        P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/totaltauBR)+"    1521       9900015      "+str(channel['idhadron']))
-                    else:
-                        P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/totaltauBR)+"    1531       9900015      "+str(channel['idlepton'])+" "+str(channel['idhadron']))
-                    sumBR+=br/totaltauBR
-                elif len(channel)==4:
-                    P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"    0       9900015      "+str(channel['idlepton']))
-                    sumBR+=br/maxsumBR
-                else:
-                    P8gen.SetParameters(channel['id']+":addChannel      1  "+str(br/maxsumBR)+"   22      "+str(channel['idlepton'])+"       9900015   "+str(channel['idhadron']))
-                    sumBR+=br/maxsumBR
-    if sumBR<1. and sumBR>0.:
-        charge = pdg.charge(int(channel['id']))
-        if charge>0:
-            P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22      -11")
-        elif charge<0:
-            P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22       11")
-        else:
-            P8gen.SetParameters(channel['id']+":addChannel      1   "+str(1.-sumBR)+"    0       22      22")
 
 def make_particles_stable(P8gen, above_lifetime):
     p8 = P8gen.getPythiaInstance()
@@ -248,46 +144,6 @@ def get_br(histograms, channel, mass, couplings):
     coupling = couplings[channel['coupling']]
     normalized_br = hist(mass)
     return normalized_br * coupling
-
-def get_branching_ratios(histograms, channels, mass, couplings, scale=False):
-    """
-    Query the branching ratios for the passed channels, for a given mass and
-    set of couplings.
-
-    If the option `scale` is set to true, the branching ratios are rescaled in
-    order to make the event generation more efficient.
-    """
-    branching_ratios = { ch['decay']: get_br(histograms, ch, mass, couplings)
-                         for ch in channels }
-    if scale:
-        branching_ratios = scale_branching_ratios(branching_ratios, channels)
-    return branching_ratios
-
-def scale_branching_ratios(branching_ratios, channels):
-    """
-    Rescale the branching ratios to optimize the event generation.
-
-    This function rescales the passed branching ratios in order to make the
-    event generation as efficient as possible when studying very rare processes,
-    while enforcing the invariant that any inclusive branching ratio must
-    remain lower that unity.
-
-    This is accomplished by computing, for each particle, the total branching
-    ratio to processes of interest, and then dividing all branching ratios by
-    the highest of those.
-    """
-    # Total branching ratios for each particle
-    total_brs = {}
-    for ch in channels:
-        if ch['id'] not in total_brs:
-            total_brs[ch['id']] = 0
-        total_brs[ch['id']] += branching_ratios[ch['decay']]
-    # Find the maximum total branching ratio (over all particles)
-    max_total_br = max(total_brs.values())
-    # Compute and apply the scaling factor
-    scaling_factor = 1 / max_total_br
-    return { decay: br * scaling_factor
-             for (decay, br) in six.iteritems(branching_ratios) }
 
 class SimpleDecay(object):
     """
