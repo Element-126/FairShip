@@ -1,4 +1,4 @@
-import ROOT, os, sys
+import ROOT, os, sys, yaml
 import shipunit as u
 import hnl,rpvsusy
 from pythia8_conf_utils import *
@@ -137,20 +137,34 @@ def configurerpvsusy(P8gen, mass, couplings, sfermionmass, benchmark, inclusive,
     if debug: pythia_log.close()
 
 
-def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, deepCopy=False, debug=True):
+def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
+              deepCopy=False, debug=True):
+    """
+    This function configures a HNLPythia8Generator instance for SHiP usage.
+    """
 
     # Wrap the Pythia8 object into a class logging all of its method calls
     if debug:
         pythia_log=open('pythia8_conf.txt','w')
         P8gen = MethodLogger(P8gen, sink=pythia_log)
-    # configure pythia8 for Ship usage
-    h=readFromAscii()
+
+    # h=readFromAscii()
+    fairship_root = os.environ['FAIRSHIP'] 
+    histograms = build_histograms('{0}/shipgen/branchingratios.dat'.format(fairship_root))
     P8gen.UseRandom3() # TRandom1 or TRandom3 ?
     P8gen.SetMom(400)  # beam momentum in GeV 
     if deepCopy: P8gen.UseDeepCopy()
     pdg = ROOT.TDatabasePDG.Instance()
     # let strange particle decay in Geant4
     make_particles_stable(P8gen, above_lifetime=1)
+
+    # Load particle & decay data
+    # ==========================
+
+    datafile = '{0}/python/hnl_production.yaml'.format(fairship_root)
+    with open(datafile, 'rU') as f:
+        data = yaml.load(f)
+    all_channels  = data['channels']
 
     # Inclusive
     # =========
@@ -165,166 +179,102 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
     # =================
 
     if inclusive=="c":
+
         P8gen.SetParameters("HardQCD::hardccbar  = on")
         add_hnl(P8gen, mass, decay_couplings)
-        # 12 14 16 neutrinos replace with N2
-        charmhistograms = ['ds_e','d_e','d0_K-_e','d0_K*-_e','d_K0_e','lambdac_Lambda0_e','xic0_Xi-_e','ds_mu','d_mu','d0_K-_mu','d_K0_mu','d0_K*-_mu','lambdac_Lambda0_mu','xic0_Xi-_mu','d_tau','ds_tau','ds_eta_e','ds_eta_mu','d_K*bar0_e','d_K*bar0_mu']
-        tauhistograms= ['tau_nu_e_bar_e','tau_nu_mu_bar_mu','tau_nu_tau_e','tau_nu_tau_mu','tau_pi-','tau_K-','tau_rho-']
-        BrDs2tauSM = 0.0548
-        totaltauBR=BrDs2tauSM * gettotalbr(h,tauhistograms,mass,production_couplings,0.) # FIXME
-        maxsumBR=getmaxsumbr(h,charmhistograms,mass,production_couplings,totaltauBR)
-        if maxsumBR==0.:
-           print "No phase space for HNL from c at this mass:",mass,". Quitting."
+
+        # Add new charmed particles
+        # -------------------------
+
+        # Select all charmed particles
+        c_particles = data['selections']['c']
+        add_particles(P8gen, c_particles + [15], data)
+
+        # Add HNL production channels from charmed particles
+        # --------------------------------------------------
+
+        # Find charm and tau decays
+        c_channels = [ch for ch in all_channels
+                      if ch['id'] in c_particles and ch['decay'] != 'sm']
+        tau_channels = [ch for ch in all_channels if abs(ch['id']) == 15]
+        # Tau production from D_s+ decay
+        c_to_tau_channel = [ch for ch in all_channels
+                            if ch['decay'] == 'sm'
+                            and abs(ch['children'][0]) == 15][0]
+
+        # Generate all decay chains to compute the branching ratio scaling factor
+        # Most charm particles directly decay to HNLs
+        c_decay_chains = [DecayChain([make_channel(ch, histograms, mass, production_couplings)])
+                          for ch in c_channels]
+        # The D_s+ can indirectly produce a HNL by first producing a tau+
+        c_to_tau_decay = make_sm_channel(c_to_tau_channel)
+        tau_decays = [make_channel(ch, histograms, mass, production_couplings)
+                      for ch in tau_channels]
+        # D_s+ -> tau+ -> N chains
+        c_tau_decay_chains = [DecayChain([c_to_tau_decay, tau_decay])
+                              for tau_decay in tau_decays]
+        all_c_chains = c_decay_chains + c_tau_decay_chains
+
+        # Compute maximum total branching ration (to rescale all BRs)
+        max_total_br = compute_max_total_br(all_c_chains)
+
+        if max_total_br <= 0:
+           print("No phase space for HNL from c at this mass: {0}. Quitting.".format(mass))
            sys.exit()
-        # FIXME: this variable is unused
-        totalBR=gettotalbr(h,charmhistograms,mass,production_couplings,totaltauBR) # FIXME
-        #overwrite Xi_c0 decays
-        P8gen.SetParameters("4132:new  Xi_c0            Xi_cbar0    2   0   0    2.47088    0.00000    0.00000    0.00000  3.36000e-02   0   1   0   1   0")
-        channels = [ {'id':'4132','decay':'xic0_Xi-_e',   'coupling':0,'idlepton':-11,'idhadron':-3312},\
-                     {'id':'4132','decay':'xic0_Xi-_mu',  'coupling':1,'idlepton':-13,'idhadron':-3312}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
-        #overwrite D0 decays
-        P8gen.SetParameters("421:new  D0  Dbar0    1   0   0    1.86486    0.00000    0.00000    0.00000  1.22900e-01   0   1   0   1   0")
-        channels = [ {'id':'421','decay':'d0_K-_e',   'coupling':0,'idlepton':-11,'idhadron':-321},\
-                     {'id':'421','decay':'d0_K*-_e',  'coupling':0,'idlepton':-11,'idhadron':-323},\
-                     {'id':'421','decay':'d0_K-_mu',  'coupling':1,'idlepton':-13,'idhadron':-321},\
-                     {'id':'421','decay':'d0_K*-_mu', 'coupling':1,'idlepton':-13,'idhadron':-323}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add charm decays
+        for ch in c_channels:
+            add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
 
-        #overwrite tau- decays
-        P8gen.SetParameters("15:new  tau-  tau+    2   -3   0    1.77682    0.00000    0.00000    0.00000  8.71100e-02   0   1   0   1   0")
-        channels = [ {'id':'15','decay':'tau_pi-', 'coupling':2,'idhadron':-211},\
-                     {'id':'15','decay':'tau_K-',  'coupling':2,'idhadron':-321},\
-                     {'id':'15','decay':'tau_rho-',  'coupling':2,'idhadron':-213},\
-                     {'id':'15','decay':'tau_nu_e_bar_e',  'coupling':2,'idlepton':11,'idhadron':-12},\
-                     {'id':'15','decay':'tau_nu_tau_e',     'coupling':0,'idlepton':11,'idhadron':+16},\
-                     {'id':'15','decay':'tau_nu_mu_bar_mu',     'coupling':2,'idlepton':13,'idhadron':-14},\
-                     {'id':'15','decay':'tau_nu_tau_mu',     'coupling':1,'idlepton':13,'idhadron':+16}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add tau production from D_s+
+        # We can also rescale Br(Ds -> tau) and Br(tau -> N X...) as long as
+        # Br(Ds -> tau -> N X...) remains the same.
+        # Here, we set Br(tau -> N) to unity.
+        total_dstau_br = sum(ch.branching_ratio() for ch in c_tau_decay_chains)
+        total_tau_br = sum(ch.branching_ratio() for ch in tau_decays)
+        P8gen.SetParameters("431:addChannel      1  "+str(total_dstau_br/max_total_br)+"    0      -15       16")
 
-        #overwrite D_s+ decays
-        P8gen.SetParameters("431:new  D_s+  D_s-    1   3   0    1.96849    0.00000    0.00000    0.00000  1.49900e-01   0   1   0   1   0")
-        channels = [ {'id':'431','decay':'ds_mu', 'coupling':1,'idlepton':-13},\
-                     {'id':'431','decay':'ds_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'431','decay':'ds_tau','coupling':2,'idlepton':-15},\
-                     {'id':'431','decay':'ds_eta_e' ,'coupling':0,'idlepton':-11},\
-                     {'id':'431','decay':'ds_eta_mu','coupling':1,'idlepton':-13},\
-                     {'id':'431','decay':'ds_production_tau','coupling':2,'idlepton':-15}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add secondary HNL production from tau
+        tau_channels = [ch for ch in data['channels'] if ch['id'] == 15]
+        for ch in tau_channels:
+            add_tau_channel(P8gen, ch, histograms, mass, production_couplings, 1/total_tau_br)
 
-        #overwrite Lambda_c+ decays
-        P8gen.SetParameters("4122:new  Lambda_c+   Lambda_cbar-    2   3   0    2.28646    0.00000    0.00000    0.00000  5.99000e-02   0   1   0   1   0")
-        channels = [ {'id':'4122','decay':'lambdac_Lambda0_e', 'coupling':0,'idlepton':-11,'idhadron':3122},\
-                     {'id':'4122','decay':'lambdac_Lambda0_mu', 'coupling':1,'idlepton':-13,'idhadron':3122}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add dummy channels in place of SM processes
+        fill_missing_channels(P8gen, max_total_br, all_c_chains)
 
-        #overwrite D+ decays
-        P8gen.SetParameters("411:new  D+ D-    1   3   0    1.86962    0.00000    0.00000    0.00000  3.11800e-01   0   1   0   1   0")
-        channels = [ {'id':'411','decay':'d_mu', 'coupling':1,'idlepton':-13},\
-                     {'id':'411','decay':'d_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'411','decay':'d_tau','coupling':2,'idlepton':-15},\
-                     {'id':'411','decay':'d_K0_e','coupling':0,'idlepton':-11,'idhadron':-311},\
-                     {'id':'411','decay':'d_K0_mu','coupling':1,'idlepton':-13,'idhadron':-311},\
-                     {'id':'411','decay':'d_K*bar0_e' ,'coupling':0,'idlepton':-11,'idhadron':-313},\
-                     {'id':'411','decay':'d_K*bar0_mu','coupling':1,'idlepton':-13,'idhadron':-313} ]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # List channels to confirm that Pythia has been properly set up
         P8gen.List(9900015)
 
     # Beauty decays only
     # ==================
 
     if inclusive=="b":
+
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
         add_hnl(P8gen, mass, decay_couplings)
-        # 12 14 16 neutrinos replace with N2
-        beautyhistograms = ['b_D*0_bar_tau','bs_D_s-_tau','b_tau','lambdab_Lambda_c+_tau','Xib_Xi_c+_tau',\
-                            'Omega_b-_tau','b0_D*-_tau','bs_D*_s-_tau','b_D0_bar_tau','b0_D-_tau','b_e','b_D*0_bar_e',\
-                            'b_D0_bar_e','b0_D*-_e','b0_D-_e','bs_D_s-_e','bs_D*_s-_e',\
-                            'lambdab_Lambda_c+_e','Xib_Xi_c+_e','Omega_b-_e','b_mu','b_D*0_bar_mu','b_D0_bar_mu','b0_D-_mu',\
-                            'b0_D*-_mu','bs_D_s-_mu','bs_D*_s-_mu',\
-                            'lambdab_Lambda_c+_mu','Xib_Xi_c+_mu','Omega_b-_mu',\
-                            'b_pi0_e','b_pi0_mu','b_pi0_tau','b0_pi-_e','b0_pi-_mu','b0_pi-_tau',\
-                            'b_rho0_e','b_rho0_mu','b_rho0_tau','b0_rho-_e','b0_rho-_mu','b0_rho-_tau',\
-                            'bs_K-_e','bs_K-_mu','bs_K-_tau','bs_K*-_e','bs_K*-_mu','bs_K*-_tau' ]
 
-        maxsumBR=getmaxsumbr(h,beautyhistograms,mass,production_couplings,0.)
-        if maxsumBR==0.:
-           print "No phase space for HNL from b at this mass:",mass,". Quitting."
+        # Add beauty particles
+        b_particles = data['selections']['b']
+        add_particles(P8gen, b_particles, data)
+
+        # Find all decay channels from beauty particles
+        b_channels = [ch for ch in all_channels if ch['id'] in b_particles]
+        b_decays = [make_channel(ch, histograms, mass, production_couplings)
+                    for ch in b_channels]
+
+        # Compute scaling factor
+        max_total_br = compute_max_total_br(b_decays)
+
+        if max_total_br <= 0:
+           print("No phase space for HNL from b at this mass: {0}. Quitting.".format(mass))
            sys.exit()
-        # FIXME: this variable is unused
-        totalBR=gettotalbr(h,beautyhistograms,mass,production_couplings,0.) # FIXME
-        #overwrite Lambda_b0 decays
-        P8gen.SetParameters("5122:new  Lambda_b0        Lambda_bbar0    2   0   0    5.61940    0.00000    0.00000    0.00000  3.69000e-01   0   1   0   1   0")
-        channels = [ {'id':'5122','decay':'lambdab_Lambda_c+_e','coupling':0,'idlepton':11,'idhadron':4122},\
-                     {'id':'5122','decay':'lambdab_Lambda_c+_mu','coupling':1,'idlepton':13,'idhadron':4122},\
-                     {'id':'5122','decay':'lambdab_Lambda_c+_tau','coupling':2,'idlepton':15,'idhadron':4122}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
 
-        #overwrite B+ decays
-        P8gen.SetParameters("521:new  B+               B-    1   3   0    5.27925    0.00000    0.00000    0.00000  4.91100e-01   0   1   0   1   0")
-        channels = [ {'id':'521','decay':'b_tau','coupling':2,'idlepton':-15},\
-                     {'id':'521','decay':'b_mu', 'coupling':1,'idlepton':-13},\
-                     {'id':'521','decay':'b_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'521','decay':'b_D0_bar_e',   'coupling':0,'idlepton':-11,'idhadron':-421},\
-                     {'id':'521','decay':'b_D*0_bar_e',  'coupling':0,'idlepton':-11,'idhadron':-423},\
-                     {'id':'521','decay':'b_D0_bar_mu',   'coupling':1,'idlepton':-13,'idhadron':-421},\
-                     {'id':'521','decay':'b_D*0_bar_mu',  'coupling':1,'idlepton':-13,'idhadron':-423},\
-                     {'id':'521','decay':'b_D0_bar_tau',   'coupling':2,'idlepton':-15,'idhadron':-421},\
-                     {'id':'521','decay':'b_D*0_bar_tau',  'coupling':2,'idlepton':-15,'idhadron':-423},\
-                     {'id':'521','decay':'b_pi0_e',  'coupling':0,'idlepton':-11,'idhadron':111},\
-                     {'id':'521','decay':'b_pi0_mu', 'coupling':1,'idlepton':-13,'idhadron':111},\
-                     {'id':'521','decay':'b_pi0_tau','coupling':2,'idlepton':-15,'idhadron':111},\
-                     {'id':'521','decay':'b_rho0_e',  'coupling':0,'idlepton':-11,'idhadron':113},\
-                     {'id':'521','decay':'b_rho0_mu', 'coupling':1,'idlepton':-13,'idhadron':113},\
-                     {'id':'521','decay':'b_rho0_tau','coupling':2,'idlepton':-15,'idhadron':113} ]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add beauty decays
+        for ch in b_channels:
+            add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
 
-        #overwrite Xi_b0 decays
-        P8gen.SetParameters("5232:new  Xi_b0            Xi_bbar0    2   0   0    5.78800    0.00000    0.00000    0.00000  3.64000e-01   0   1   0   1   0")
-        channels = [ {'id':'5232','decay':'Xib_Xi_c+_tau','coupling':2,'idlepton':-15},\
-                     {'id':'5232','decay':'Xib_Xi_c+_mu','coupling':1,'idlepton':-13},\
-                     {'id':'5232','decay':'Xib_Xi_c+_e','coupling':0,'idlepton':-11}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
-
-        #overwrite B_s0 decays
-        P8gen.SetParameters("531:new  B_s0             B_sbar0    1   0   0    5.36677    0.00000    0.00000    0.00000  4.39000e-01   0   1   0   1   0")
-        channels = [ {'id':'531','decay':'bs_D_s-_e',   'coupling':0,'idlepton':-11,'idhadron':-431},\
-                     {'id':'531','decay':'bs_D*_s-_e',  'coupling':0,'idlepton':-11,'idhadron':-433},\
-                     {'id':'531','decay':'bs_D_s-_mu',  'coupling':1,'idlepton':-13,'idhadron':-431},\
-                     {'id':'531','decay':'bs_D*_s-_mu', 'coupling':1,'idlepton':-13,'idhadron':-433},\
-                     {'id':'531','decay':'bs_D_s-_tau', 'coupling':2,'idlepton':-15,'idhadron':-431},\
-                     {'id':'531','decay':'bs_D*_s-_tau','coupling':2,'idlepton':-15,'idhadron':-433},\
-                     {'id':'531','decay':'bs_K-_e',     'coupling':0,'idlepton':-11,'idhadron':-321},\
-                     {'id':'531','decay':'bs_K-_mu',    'coupling':1,'idlepton':-13,'idhadron':-321},\
-                     {'id':'531','decay':'bs_K-_tau',   'coupling':2,'idlepton':-15,'idhadron':-321},\
-                     {'id':'531','decay':'bs_K*-_e',    'coupling':0,'idlepton':-11,'idhadron':-323},\
-                     {'id':'531','decay':'bs_K*-_mu',   'coupling':1,'idlepton':-13,'idhadron':-323},\
-                     {'id':'531','decay':'bs_K*-_tau',  'coupling':2,'idlepton':-15,'idhadron':-323} ]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
-
-        #overwrite Omega_b- decays
-        P8gen.SetParameters("5332:new  Omega_b-         Omega_bbar+    2   -3   0    6.07000    0.00000    0.00000    0.00000  3.64000e-01   0   1   0   1   0")
-        channels = [ {'id':'5332','decay':'Omega_b-_tau','coupling':2,'idlepton':-15},\
-                     {'id':'5332','decay':'Omega_b-_mu','coupling':1,'idlepton':-13},\
-                     {'id':'5332','decay':'Omega_b-_e','coupling':0,'idlepton':-11}]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
-
-        #overwrite B0 decays
-        P8gen.SetParameters("511:new  B0  Bbar0    1   0   0    5.27958    0.00000    0.00000    0.00000  4.58700e-01   0   1   0   1   0")
-        channels = [ {'id':'511','decay':'b0_D-_e',   'coupling':0,'idlepton':-11,'idhadron':-411},\
-                     {'id':'511','decay':'b0_D*-_e',  'coupling':0,'idlepton':-11,'idhadron':-413},\
-                     {'id':'511','decay':'b0_D-_mu',  'coupling':1,'idlepton':-13,'idhadron':-411},\
-                     {'id':'511','decay':'b0_D*-_mu', 'coupling':1,'idlepton':-13,'idhadron':-413},\
-                     {'id':'511','decay':'b0_D-_tau', 'coupling':2,'idlepton':-15,'idhadron':-411},\
-                     {'id':'511','decay':'b0_D*-_tau','coupling':2,'idlepton':-15,'idhadron':-413},\
-                     {'id':'511','decay':'b0_pi-_e',  'coupling':0,'idlepton':-11,'idhadron':-211},\
-                     {'id':'511','decay':'b0_pi-_mu', 'coupling':1,'idlepton':-13,'idhadron':-211},\
-                     {'id':'511','decay':'b0_pi-_tau','coupling':2,'idlepton':-15,'idhadron':-211},\
-                     {'id':'511','decay':'b0_rho-_e',  'coupling':0,'idlepton':-11,'idhadron':-213},\
-                     {'id':'511','decay':'b0_rho-_mu', 'coupling':1,'idlepton':-13,'idhadron':-213},\
-                     {'id':'511','decay':'b0_rho-_tau','coupling':2,'idlepton':-15,'idhadron':-213} ]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add dummy channels in place of SM processes
+        fill_missing_channels(P8gen, max_total_br, b_decays)
 
         P8gen.List(9900015)
 
@@ -332,39 +282,39 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive, dee
     # ==============
 
     if inclusive=="bc":
+
         P8gen.SetParameters("HardQCD::hardbbbar  = on")
         add_hnl(P8gen, mass, decay_couplings)
-        # 12 14 16 neutrinos replace with N2
-        bc_histograms = ['bc_e','bc_mu','bc_tau','bc_B0_e','bc_B0_mu','bc_B_s0_e','bc_B_s0_mu','bc_B*0_e','bc_B*0_mu','bc_B*_s0_e','bc_B*_s0_mu']
-        maxsumBR=getmaxsumbr(h,bc_histograms,mass,production_couplings,0.)
-        if maxsumBR==0.:
-           print "No phase space for HNL from bc at this mass:",mass,". Quitting."
-           sys.exit()
-        # FIXME: this variable is unused
-        totalBR=gettotalbr(h,bc_histograms,mass,production_couplings,0.) # FIXME
 
-        #overwrite B_c+ decays
-        P8gen.SetParameters("541:new  B_c+             B_c-    1   3   0    6.27700    0.00000    0.00000    0.00000  1.38000e-01   0   1   0   1   0")
-        channels = [ {'id':'541','decay':'bc_tau','coupling':2,'idlepton':-15},\
-                     {'id':'541','decay':'bc_e',  'coupling':0,'idlepton':-11},\
-                     {'id':'541','decay':'bc_mu', 'coupling':1,'idlepton':-13},\
-                     {'id':'541','decay':'bc_B0_e',    'coupling':0,'idlepton':-11,'idhadron':511},\
-                     {'id':'541','decay':'bc_B*0_e',   'coupling':0,'idlepton':-11,'idhadron':513},\
-                     {'id':'541','decay':'bc_B_s0_e',  'coupling':0,'idlepton':-11,'idhadron':531},\
-                     {'id':'541','decay':'bc_B*_s0_e', 'coupling':0,'idlepton':-11,'idhadron':533},\
-                     {'id':'541','decay':'bc_B0_mu',   'coupling':1,'idlepton':-13,'idhadron':511},\
-                     {'id':'541','decay':'bc_B*0_mu',  'coupling':1,'idlepton':-13,'idhadron':513},\
-                     {'id':'541','decay':'bc_B_s0_mu', 'coupling':1,'idlepton':-13,'idhadron':531},\
-                     {'id':'541','decay':'bc_B*_s0_mu','coupling':1,'idlepton':-13,'idhadron':533} ]
-        setChannels(P8gen,h,channels,mass,production_couplings,maxsumBR)
+        # Add B_c+/- particles
+        bc_particles = data['selections']['bc']
+        add_particles(P8gen, bc_particles, data)
+
+        # Find all of their decay channels
+        bc_channels = [ch for ch in all_channels if ch['id'] in bc_particles]
+        bc_decays = [make_channel(ch, histograms, mass, production_couplings)
+                     for ch in bc_channels]
+
+        # Compute scaling factor
+        max_total_br = compute_max_total_br(bc_decays)
+
+        if max_total_br <= 0:
+           print("No phase space for HNL from bc at this mass: {0}. Quitting.".format(mass))
+           sys.exit()
+
+        # Add B_c+/- decays
+        for ch in bc_channels:
+            add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
+
+        # Add dummy channels in place of SM processes
+        fill_missing_channels(P8gen, max_total_br, bc_decays)
 
         P8gen.List(9900015)
 
     if debug: pythia_log.close()
 
-
-# Factor out the code needed to add the HNL to Pythia and ROOT
 def add_hnl(P8gen, mass, decay_couplings):
+    "Adds the HNL to Pythia and ROOT"
     hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
     ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
     print "HNL ctau",ctau

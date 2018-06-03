@@ -353,17 +353,19 @@ class DecayChain(object):
     def __str__(self):
         return '({0})'.format(') => ('.join(str(d) for d in self._decays))
 
-def build_channel(channel, histograms, mass, couplings):
+def make_channel(channel, histograms, mass, couplings):
     if channel['decay'] == 'sm':
-        decay = build_sm_channel(channel)
+        # This is a SM channel with a tabulated branching ratio
+        decay = make_sm_channel(channel)
     else:
-        decay = build_bsm_channel(channel, histograms, mass, couplings)
+        # BSM channel: we need to compute the branching ratio
+        decay = make_bsm_channel(channel, histograms, mass, couplings)
     return decay
 
-def build_sm_channel(channel):
+def make_sm_channel(channel):
     return SimpleDecay(channel['id'], channel['children'], channel['br'])
 
-def build_bsm_channel(channel, histograms, mass, couplings):
+def make_bsm_channel(channel, histograms, mass, couplings):
     """
     Parse a channel into a SimpleDecay instance.
     """
@@ -377,3 +379,91 @@ def build_bsm_channel(channel, histograms, mass, couplings):
     if len(children) <= 0:
         raise ValueError("No children found for decay channel {0}".format(channel['decay']))
     return SimpleDecay(parent, children, br)
+
+def add_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
+    if 'idlepton' in ch:
+        br = get_br(histograms, ch, mass, couplings)
+        if br <= 0: # Ignore kinematically closed channels
+            return
+        if 'idhadron' in ch: # Semileptonic decay
+            P8gen.SetParameters(str(ch['id'])+":addChannel      1  "+str(br*scale_factor)+"   22      "+str(ch['idlepton'])+"       9900015   "+str(ch['idhadron']))
+        else: # Leptonic decay
+            P8gen.SetParameters(str(ch['id'])+":addChannel      1  "+str(br*scale_factor)+"    0       9900015      "+str(ch['idlepton']))
+    else: # Wrong decay
+        raise ValueError("Missing key 'idlepton' in channel {0}".format(ch))
+
+def add_tau_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
+    if 'idhadron' in ch:
+        br = get_br(histograms, ch, mass, couplings)
+        if br <= 0: # Ignore kinematically closed channels
+            return
+        if 'idlepton' in ch: # 3-body leptonic decay
+            P8gen.SetParameters(str(ch['id'])+":addChannel      1  "+str(br*scale_factor)+"    1531       9900015      "+str(ch['idlepton'])+" "+str(ch['idhadron']))
+        else: # 2-body semileptonic decay
+            P8gen.SetParameters(str(ch['id'])+":addChannel      1  "+str(br*scale_factor)+"    1521       9900015      "+str(ch['idhadron']))
+    else:
+        raise ValueError("Missing key 'idhadron' in channel {0}".format(ch))
+
+def add_dummy_channel(P8gen, particle, remainder):
+    pdg = P8gen.getPythiaInstance().particleData
+    charge = pdg.charge(particle)
+    if charge > 0:
+        P8gen.SetParameters(str(particle)+":addChannel      1   "+str(remainder)+"    0       22      -11")
+    elif charge < 0:
+        P8gen.SetParameters(str(particle)+":addChannel      1   "+str(remainder)+"    0       22       11")
+    else:
+        P8gen.SetParameters(str(particle)+":addChannel      1   "+str(remainder)+"    0       22      22")
+
+def compute_max_total_br(decay_chains):
+    """
+    This function computes the maximum total branching ratio for all decay chains.
+
+    In order to make the event generation as efficient as possible when
+    studying very rare processes, it is necessary to rescale the branching
+    ratios, while enforcing the invariant that any inclusive branching ratio
+    must remain lower that unity.
+
+    This is accomplished by computing, for each particle, the total branching
+    ratio to processes of interest, and then dividing all branching ratios by
+    the highest of those.
+    """
+    # For each top-level charmed particle, sum BR over all its decay chains
+    top_level = set(ch.parent() for ch in decay_chains)
+    total_brs = []
+    for particle in top_level:
+        my_decay_chains = [ch for ch in decay_chains if ch.parent() == particle]
+        total_brs.append(sum(ch.branching_ratio() for ch in my_decay_chains))
+
+    # Find the maximum total branching ratio
+    return max(total_brs)
+
+def fill_missing_channels(P8gen, max_total_br, decay_chains, epsilon=1e-6):
+    """
+    Add dummy channels for correct rejection sampling.
+
+    Even after rescaling the branching ratios, they do not sum up to unity
+    for most particles since we are ignoring SM processes.
+
+    This function adds a "filler" channel for each particle, in order to
+    preserve the ratios between different branching ratios.
+    """
+    top_level = set(ch.parent() for ch in decay_chains)
+    for particle in top_level:
+        my_total_br = sum(chain.branching_ratio() for chain in decay_chains
+                          if chain.parent() == particle)
+        remainder = 1 - my_total_br / max_total_br
+        assert(remainder > -epsilon)
+        assert(remainder < 1 + epsilon)
+        if remainder > epsilon:
+            add_dummy_channel(P8gen, particle, remainder)
+
+def add_particles(P8gen, particles, data):
+    for particle_id in particles:
+        # Find particle in database
+        particle = next((p for p in data['particles']
+                         if particle_id in [p['id'], p['name']]), None)
+        if particle is None:
+            raise ValueError("Could not find particle ID {0} in file {1}"
+                             .format(particle, datafile))
+        # Add the particle
+        P8gen.SetParameters(particle['cmd'])
