@@ -148,7 +148,6 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
         pythia_log=open('pythia8_conf.txt','w')
         P8gen = MethodLogger(P8gen, sink=pythia_log)
 
-    # h=readFromAscii()
     fairship_root = os.environ['FAIRSHIP'] 
     histograms = build_histograms('{0}/shipgen/branchingratios.dat'.format(fairship_root))
     P8gen.UseRandom3() # TRandom1 or TRandom3 ?
@@ -317,7 +316,7 @@ def add_hnl(P8gen, mass, decay_couplings):
     "Adds the HNL to Pythia and ROOT"
     hnl_instance = hnl.HNL(mass, decay_couplings, debug=True)
     ctau = hnl_instance.computeNLifetime(system="FairShip") * u.c_light * u.cm
-    print "HNL ctau",ctau
+    print("HNL ctau {}".format(ctau))
     P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0")
     P8gen.SetParameters("9900015:isResonance = false")
     P8gen.SetParameters("Next:numberCount    =  0")

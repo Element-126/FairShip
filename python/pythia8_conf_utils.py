@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os, sys, warnings, re
 import six
 import numpy as np
@@ -55,7 +56,7 @@ def getmaxsumbrrpvsusy(h,histograms,mass,couplings):
            sumbrs[meson]+=getbr(h,histoname,mass,coupling)
        except:
            sumbrs[meson]=getbr(h,histoname,mass,coupling)
-    print sumbrs.values()
+    print(sumbrs.values())
     maxsumbr=max(sumbrs.values())
     return maxsumbr
 
@@ -68,6 +69,10 @@ def gettotalbrrpvsusy(h,histograms,mass,couplings):
     return totalbr
 
 def make_particles_stable(P8gen, above_lifetime):
+    """
+    Make the particles with a lifetime above the specified one stable, to allow
+    them to decay in Geant4 instead.
+    """
     p8 = P8gen.getPythiaInstance()
     n=1
     while n!=0:
@@ -76,7 +81,7 @@ def make_particles_stable(P8gen, above_lifetime):
         if p.tau0() > above_lifetime:
             command = str(n)+":mayDecay = false"
             p8.readString(command)
-            print "Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name())
+            print("Pythia8 configuration: Made %s stable for Pythia, should decay in Geant4"%(p.name()))
 
 def parse_histograms(filepath):
     """
@@ -210,6 +215,12 @@ class DecayChain(object):
         return '({0})'.format(') => ('.join(str(d) for d in self._decays))
 
 def make_channel(channel, histograms, mass, couplings):
+    """
+    Parse a decay channel into a SimpleDecay instance.
+
+    The exact nature of the channel (SM/BSM) is determined by inspecting its
+    dictionary entries.
+    """
     if channel['decay'] == 'sm':
         # This is a SM channel with a tabulated branching ratio
         decay = make_sm_channel(channel)
@@ -219,12 +230,11 @@ def make_channel(channel, histograms, mass, couplings):
     return decay
 
 def make_sm_channel(channel):
+    "Parse a SM decay channel into a SimpleDecay instance."
     return SimpleDecay(channel['id'], channel['children'], channel['br'])
 
 def make_bsm_channel(channel, histograms, mass, couplings):
-    """
-    Parse a channel into a SimpleDecay instance.
-    """
+    "Parse a BSM channel into a SimpleDecay instance."
     br = get_br(histograms, channel, mass, couplings)
     parent = channel['id']
     children = []
@@ -237,6 +247,7 @@ def make_bsm_channel(channel, histograms, mass, couplings):
     return SimpleDecay(parent, children, br)
 
 def add_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
+    "Add to PYTHIA a leptonic or semileptonic decay channel to HNL."
     if 'idlepton' in ch:
         br = get_br(histograms, ch, mass, couplings)
         if br <= 0: # Ignore kinematically closed channels
@@ -249,6 +260,7 @@ def add_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
         raise ValueError("Missing key 'idlepton' in channel {0}".format(ch))
 
 def add_tau_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
+    "Add to PYTHIA a tau decay channel to HNL."
     if 'idhadron' in ch:
         br = get_br(histograms, ch, mass, couplings)
         if br <= 0: # Ignore kinematically closed channels
@@ -261,6 +273,22 @@ def add_tau_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
         raise ValueError("Missing key 'idhadron' in channel {0}".format(ch))
 
 def add_dummy_channel(P8gen, particle, remainder):
+    """
+    Add a dummy channel to PYTHIA, with branching ratio equal to `remainder.`
+
+    The purpose of this function is to compensate for the absence of SM
+    channels, which are ignored when investigating rare processes. A dummy
+    decay channel is instead added to each particle in order to maintain the
+    correct ratios between the branching ratios of each particle to rare
+    processes. This is usually combined with a global reweighting of the
+    branching ratios.
+
+    In order to keep PYTHIA from complaining about charge conservation, a
+    suitable process is added which conserves electric charge.
+
+    All dummy channels can be identified by the presence of a photon among the
+    decay products.
+    """
     pdg = P8gen.getPythiaInstance().particleData
     charge = pdg.charge(particle)
     if charge > 0:
@@ -314,6 +342,16 @@ def fill_missing_channels(P8gen, max_total_br, decay_chains, epsilon=1e-6):
             add_dummy_channel(P8gen, particle, remainder)
 
 def add_particles(P8gen, particles, data):
+    """
+    Adds the corresponding particles to PYTHIA.
+
+    `particles` must be a list containing either the particles PDG IDs, or
+    their PYTHIA names. The commands needed to add the particles are queried
+    from `data`.
+
+    If the particle is not self-conjugate, the antiparticle is automatically
+    added by PYTHIA.
+    """
     for particle_id in particles:
         # Find particle in database
         particle = next((p for p in data['particles']
