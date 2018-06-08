@@ -28,11 +28,15 @@
 """
 
 import math
-import ROOT, os
+import sys, os
 import shipunit as u
 
+path_to_hnlbr = '/home/user/Documents/HNL simulations/Code/HNLBR'
+sys.path.append(path_to_hnlbr)
+import hnlbr.data.particle as dat
+
 # Load PDG database
-pdg = ROOT.TDatabasePDG.Instance()
+pdata = dat.ParticleData()
 
 def PDGname(particle):
     """
@@ -43,21 +47,24 @@ def PDGname(particle):
     if particle == 'nu': return 'nu_e' # simple workaround to handle 3nu channel
     return particle
 
+quark_masses = {
+    'u': 2.2e-3,
+    'd': 4.7e-3,
+    's': 96e-3,
+    'c': 1.27,
+    'b': 4.18,
+    't': 173.21
+}
+
 def mass(particle):
     """
     Read particle mass from PDG database
     """
+    if particle in quark_masses:
+        return quark_masses[particle]
     particle = PDGname(particle)
-    tPart = pdg.GetParticle(particle)
-    return tPart.Mass()
-
-def lifetime(particle):
-    """
-    Read particle lifetime from PDG database
-    """
-    particle = PDGname(particle)
-    tPart = pdg.GetParticle(particle)
-    return tPart.Lifetime()
+    pdg_id = pdata.pdg_id(particle)
+    return pdata.mass(pdg_id)
 
 class CKMmatrix():
     """
