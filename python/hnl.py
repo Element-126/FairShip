@@ -29,6 +29,8 @@
 
 import math
 import sys, os
+import numpy as np
+import scipy.interpolate
 import shipunit as u
 
 path_to_hnlbr = '/home/user/Documents/HNL simulations/Code/HNLBR'
@@ -199,8 +201,11 @@ class HNLbranchings():
         """
         Returns 3-loops QCD correction to HNL decay width into quarks
         """
-        alpha_s = ROOT.TGraph( os.path.expandvars('$FAIRSHIP/python/alpha_s.dat') )
-        a_s = alpha_s.Eval(self.MN)
+        arr = np.loadtxt(os.path.expandvars('$FAIRSHIP/python/alpha_s.dat'))
+        E = arr[:,0]
+        alpha_s = arr[:,1]
+        interpolator = scipy.interpolate.interp1d(E, alpha_s, kind='linear')
+        a_s = interpolator(self.MN)
         qcd_corr = a_s / math.pi
         qcd_corr += 5.2 * (a_s / math.pi)**2.
         qcd_corr += 26.4 * (a_s / math.pi)**3.
