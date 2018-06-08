@@ -31,6 +31,7 @@ import math
 import sys, os
 import numpy as np
 import scipy.interpolate
+import scipy.integrate
 import shipunit as u
 
 path_to_hnlbr = '/home/user/Documents/HNL simulations/Code/HNLBR'
@@ -286,15 +287,13 @@ class HNLbranchings():
         Numerical integral needed for 3-body decays trough W boson.
         xi = mi/MN
         """
-        func = ROOT.TF1('func',self.Integrand,0,1,3) # Setting function
-        func.SetParameters(x1,x2,x3)
         xmin = (x1 + x3)**2
         xmax = (1. - x2)**2
-        wf1 = ROOT.Math.WrappedTF1(func) # Setting simple Gauss integration method
-        ig = ROOT.Math.GaussIntegrator()
-        ig.SetFunction(wf1)
-        ig.SetRelTolerance(0.001)
-        res = 12. * ig.Integral(xmin,xmax)
+        val, err = scipy.integrate.quad(
+            lambda xx: self.Integrand([xx], [x1,x2,x3]),
+            xmin, xmax
+        )
+        res = 12. * val
         return res
     
     def Width_l1_l2_nu2(self, alpha, beta):
