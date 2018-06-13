@@ -609,7 +609,19 @@ class HNLbranchings():
                 allowedDecays.update({decay:'no'})
         return allowedDecays
 
+    @staticmethod
+    def _isVisible(decay):
+        return not 'nu' in decay
 
+    def visibleBranchingRatio(self):
+        """
+        Returns the total HNL branching ratio to visible channels (without neutrinos).
+        """
+        visibleDecays = filter(self._isVisible, self.decays)
+        visibleBR = sum(self.findBranchingRatio(decay) for decay in visibleDecays)
+        assert(visibleBR >= 0)
+        assert(visibleBR <= 1)
+        return visibleBR
 
 
 class HNL(HNLbranchings):
