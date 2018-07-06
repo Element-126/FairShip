@@ -149,18 +149,19 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
         P8gen = MethodLogger(P8gen, sink=pythia_log)
 
     fairship_root = os.environ['FAIRSHIP'] 
-    histograms = build_histograms('{0}/shipgen/branchingratios.dat'.format(fairship_root))
+    histograms = build_histograms(fairship_root + '/shipgen/branchingratios.dat')
     P8gen.UseRandom3() # TRandom1 or TRandom3 ?
     P8gen.SetMom(400)  # beam momentum in GeV 
     if deepCopy: P8gen.UseDeepCopy()
     pdg = ROOT.TDatabasePDG.Instance()
+    P8gen.SetParameters("Next:numberCount    =  0")
     # let strange particle decay in Geant4
     make_particles_stable(P8gen, above_lifetime=1)
 
     # Load particle & decay data
     # ==========================
 
-    datafile = '{0}/python/hnl_production.yaml'.format(fairship_root)
+    datafile = fairship_root + '/python/hnl_production.yaml'
     with open(datafile, 'rU') as f:
         data = yaml.load(f)
     all_channels  = data['channels']
@@ -179,14 +180,16 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
 
     if inclusive=="c":
 
-        P8gen.SetParameters("HardQCD::hardccbar  = on")
+        selection = data['selections']['c']
+        for cmd in selection['parameters']:
+            P8gen.SetParameters(cmd)
         add_hnl(P8gen, mass, decay_couplings)
 
         # Add new charmed particles
         # -------------------------
 
         # Select all charmed particles
-        c_particles = data['selections']['c']
+        c_particles = selection['particles']
         add_particles(P8gen, c_particles + [15], data)
 
         # Add HNL production channels from charmed particles
@@ -221,7 +224,7 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
            print("No phase space for HNL from c at this mass: {0}. Quitting.".format(mass))
            sys.exit()
 
-        print_scaling_factor(1/max_total_br)
+        print_scale_factor(1/max_total_br)
 
         # Add charm decays
         for ch in c_channels:
@@ -246,73 +249,39 @@ def configure(P8gen, mass, production_couplings, decay_couplings, inclusive,
         # List channels to confirm that Pythia has been properly set up
         P8gen.List(9900015)
 
-    # Beauty decays only
-    # ==================
+    # B/Bc decays only
+    # ================
 
-    if inclusive=="b":
+    if inclusive in ['b', 'bc']:
 
-        P8gen.SetParameters("HardQCD::hardbbbar  = on")
+        selection = data['selections'][inclusive]
+        for cmd in selection['parameters']:
+            P8gen.SetParameters(cmd)
         add_hnl(P8gen, mass, decay_couplings)
 
-        # Add beauty particles
-        b_particles = data['selections']['b']
-        add_particles(P8gen, b_particles, data)
+        # Add particles
+        particles = selection['particles']
+        add_particles(P8gen, particles, data)
 
-        # Find all decay channels from beauty particles
-        b_channels = [ch for ch in all_channels if ch['id'] in b_particles]
-        b_decays = [make_channel(ch, histograms, mass, production_couplings)
-                    for ch in b_channels]
+        # Find all decay channels
+        channels = [ch for ch in all_channels if ch['id'] in particles]
+        decays = [make_channel(ch, histograms, mass, production_couplings) for ch in channels]
 
         # Compute scaling factor
-        max_total_br = compute_max_total_br(b_decays)
+        max_total_br = compute_max_total_br(decays)
 
         if max_total_br <= 0:
-           print("No phase space for HNL from b at this mass: {0}. Quitting.".format(mass))
+           print("No phase space for HNL from {0} at this mass: {1}. Quitting.".format(inclusive, mass))
            sys.exit()
 
-        print_scaling_factor(1/max_total_br)
+        print_scale_factor(1/max_total_br)
 
         # Add beauty decays
-        for ch in b_channels:
+        for ch in channels:
             add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
 
         # Add dummy channels in place of SM processes
-        fill_missing_channels(P8gen, max_total_br, b_decays)
-
-        P8gen.List(9900015)
-
-    # Bc decays only
-    # ==============
-
-    if inclusive=="bc":
-
-        P8gen.SetParameters("HardQCD::hardbbbar  = on")
-        add_hnl(P8gen, mass, decay_couplings)
-
-        # Add B_c+/- particles
-        bc_particles = data['selections']['bc']
-        add_particles(P8gen, bc_particles, data)
-
-        # Find all of their decay channels
-        bc_channels = [ch for ch in all_channels if ch['id'] in bc_particles]
-        bc_decays = [make_channel(ch, histograms, mass, production_couplings)
-                     for ch in bc_channels]
-
-        # Compute scaling factor
-        max_total_br = compute_max_total_br(bc_decays)
-
-        if max_total_br <= 0:
-           print("No phase space for HNL from bc at this mass: {0}. Quitting.".format(mass))
-           sys.exit()
-
-        print_scaling_factor(1/max_total_br)
-
-        # Add B_c+/- decays
-        for ch in bc_channels:
-            add_channel(P8gen, ch, histograms, mass, production_couplings, 1/max_total_br)
-
-        # Add dummy channels in place of SM processes
-        fill_missing_channels(P8gen, max_total_br, bc_decays)
+        fill_missing_channels(P8gen, max_total_br, decays)
 
         P8gen.List(9900015)
 
@@ -325,7 +294,6 @@ def add_hnl(P8gen, mass, decay_couplings):
     print("HNL ctau {}".format(ctau))
     P8gen.SetParameters("9900015:new = N2 N2 2 0 0 "+str(mass)+" 0.0 0.0 0.0 "+str(ctau/u.mm)+"  0   1   0   1   0")
     P8gen.SetParameters("9900015:isResonance = false")
-    P8gen.SetParameters("Next:numberCount    =  0")
     # Configuring decay modes...
     readDecayTable.addHNLdecayChannels(P8gen, hnl_instance, conffile=os.path.expandvars('$FAIRSHIP/python/DecaySelection.conf'), verbose=False)
     # Finish HNL setup...

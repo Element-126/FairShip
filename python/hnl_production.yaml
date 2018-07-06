@@ -70,10 +70,22 @@
 
     "selections":
     {
-        "c"  : [4132, 421, 431, 4122, 411],
-        "b"  : [5122, 521, 5232, 531, 5332, 511],
-        "bc" : [541],
-        "tau": [15]
+        "c"  : {
+            "parameters": ["HardQCD::hardccbar  = on"],
+            "particles": [4132, 421, 431, 4122, 411],
+        },
+        "b"  : {
+            "parameters": ["HardQCD::hardbbbar  = on"],
+            "particles": [5122, 521, 5232, 531, 5332, 511],
+        },
+        "bc" : {
+            "parameters": ["HardQCD::hardbbbar  = on"],
+            "particles": [541],
+        },
+        "tau": {
+            "parameters": [],
+            "particles": [15],
+        },
     },
 
     "channels":
