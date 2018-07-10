@@ -145,10 +145,15 @@ def get_br(histograms, channel, mass, couplings):
     Utility function used to reliably query the branching ratio for a given
     channel at a given mass, taking into account the correct coupling.
     """
-    hist = histograms[channel['decay']]
-    coupling = couplings[channel['coupling']]
-    normalized_br = hist(mass)
-    return normalized_br * coupling
+    key = channel['decay']
+    if key == 'sm':
+        br = channel['br']
+    else:
+        hist = histograms[key]
+        coupling = couplings[channel['coupling']]
+        normalized_br = hist(mass)
+        br = normalized_br * coupling
+    return br
 
 class SimpleDecay(object):
     """
@@ -365,3 +370,25 @@ def add_particles(P8gen, particles, data):
 def print_scale_factor(scaling_factor):
     "Prints the scale factor used to make event generation more efficient."
     print("One simulated event per {0:.4g} meson decays".format(scaling_factor))
+
+def get_children(channel):
+    if channel['decay'] == 'sm':
+        return channel['children']
+    else:
+        children = []
+        for key in ['idlepton', 'idhadron']:
+            if key in channel:
+                children.append(channel[key])
+        return children
+
+def compute_decay_channels(histograms, all_channels, mass, couplings):
+    all_children = set(map(abs, sum([get_children(ch) for ch in all_channels], [])))
+    top_level_particles = set([ch['id'] for ch in all_channels if not ch['id'] in all_children])
+    root = ('pp', 1, 0, list(top_level_particles))
+    def compute_one_channel(ch):
+        parent = ch['id']
+        children = get_children(ch)
+        branching_ratio = get_br(histograms, ch, mass, couplings)
+        return (ch['decay'], branching_ratio, parent, children)
+    return [root] + [compute_one_channel(ch) for ch in all_channels]
+
