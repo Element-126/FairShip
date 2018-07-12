@@ -1,5 +1,7 @@
 from __future__ import print_function
-import os, re
+import os
+import sys
+import re
 import six
 import numpy as np
 import scipy.interpolate
@@ -127,17 +129,17 @@ def parse_histograms(filepath):
         histograms[decay_code] = (masses, branching_ratios)
     return histograms
 
-def build_histograms(filepath):
+def make_interpolators(filepath, kind='linear'):
     """
     This function reads a file containing branching ratio histograms, and
-    returns a dictionary of linear interpolators of the branching ratios,
-    indexed by the decay string.
+    returns a dictionary of interpolators of the branching ratios, indexed by
+    the decay string.
     """
     histogram_data = parse_histograms(filepath)
     histograms = {}
     for (hist_string, (masses, br)) in six.iteritems(histogram_data):
         histograms[hist_string] = scipy.interpolate.interp1d(
-            masses, br, kind='linear', bounds_error=False, fill_value=0, assume_sorted=True)
+            masses, br, kind=kind, bounds_error=False, fill_value=0, assume_sorted=True)
     return histograms
 
 def get_br(histograms, channel, mass, couplings):
@@ -149,102 +151,6 @@ def get_br(histograms, channel, mass, couplings):
     coupling = couplings[channel['coupling']]
     normalized_br = hist(mass)
     return normalized_br * coupling
-
-class SimpleDecay(object):
-    """
-    A simple decay A -> X...
-    """
-    def __init__(self, parent, children, branching_ratio):
-        self._parent = parent
-        self._children = children
-        self._branching_ratio = branching_ratio
-
-    def parent(self):
-        return self._parent
-
-    def children(self):
-        return self._children
-
-    def branching_ratio(self):
-        return self._branching_ratio
-
-    def __str__(self):
-        return '{0} -> {1}'.format(self._parent, ' '.join(
-            str(ch) for ch in self._children))
-
-class DecayChain(object):
-    """
-    A decay chain: A -> X... B (B -> Y... C (C -> Z...))
-
-    This corresponds to one branch of the decay tree, and is implemented as a
-    list of SimpleDecay's, where the parent of decay n+1 is a children for
-    decay n, domino style.
-    """
-    def __init__(self, decays):
-        self._decays = decays
-        for n in range(len(decays)-1):
-            if abs(decays[n+1].parent()) not in np.abs(decays[n].children()):
-                raise ValueError('Non-connected decay chain ({0})'.format(str(self)))
-
-    def parent(self):
-        "Return the parent of the topmost decay."
-        return self._decays[0].parent()
-
-    def children(self):
-        "Return the children of the last decay in the chain."
-        return self._decays[-1].children()
-
-    def branching_ratio(self):
-        "Returns the branching ratio for the full decay chain."
-        return np.prod([decay.branching_ratio() for decay in self._decays])
-
-    def append(self, decay):
-        "Appends one decay at the end of the decay chain, after checking consistency."
-        if len(self._decays) > 0 and abs(decay.parent()) not in np.abs(self._decays[-1].children()):
-            raise ValueError(
-                'Refusing to create inconsistent decay chain from {0} and {1}'.format(
-                    str(self), str(decay)))
-        if isinstance(decay, SimpleDecay):
-            self._decays.append(decay)
-        elif isinstance(decay, DecayChain):
-            self._decays.extend(decay._decays)
-        else:
-            raise ValueError('Cannot extend decay chain with {0}'.format(str(decay)))
-
-    def __str__(self):
-        return '({0})'.format(') => ('.join(str(d) for d in self._decays))
-
-def make_channel(channel, histograms, mass, couplings):
-    """
-    Parse a decay channel into a SimpleDecay instance.
-
-    The exact nature of the channel (SM/BSM) is determined by inspecting its
-    dictionary entries.
-    """
-    if channel['decay'] == 'sm':
-        # This is a SM channel with a tabulated branching ratio
-        decay = make_sm_channel(channel)
-    else:
-        # BSM channel: we need to compute the branching ratio
-        decay = make_bsm_channel(channel, histograms, mass, couplings)
-    return decay
-
-def make_sm_channel(channel):
-    "Parse a SM decay channel into a SimpleDecay instance."
-    return SimpleDecay(channel['id'], channel['children'], channel['br'])
-
-def make_bsm_channel(channel, histograms, mass, couplings):
-    "Parse a BSM channel into a SimpleDecay instance."
-    br = get_br(histograms, channel, mass, couplings)
-    parent = channel['id']
-    children = []
-    if 'idhadron' in channel:
-        children.append(channel['idhadron'])
-    if 'idlepton' in channel:
-        children.append(channel['idlepton'])
-    if len(children) <= 0:
-        raise ValueError("No children found for decay channel {0}".format(channel['decay']))
-    return SimpleDecay(parent, children, br)
 
 def add_channel(P8gen, ch, histograms, mass, couplings, scale_factor):
     "Add to PYTHIA a leptonic or semileptonic decay channel to HNL."
@@ -298,6 +204,20 @@ def add_dummy_channel(P8gen, particle, remainder):
     else:
         P8gen.SetParameters(str(particle)+":addChannel      1   "+str(remainder)+"    0       22      22")
 
+def get_top_level_particles(decay_chains):
+    """
+    Returns the set of particles which are at the top of a decay chain.
+    """
+    return set(top for (top, branching_ratios) in decay_chains)
+
+def compute_total_br(particle, decay_chains):
+    """
+    Returns the total branching ratio to HNLs for a given particle.
+    """
+    return sum(np.prod(branching_ratios)
+               for (top, branching_ratios) in decay_chains
+               if top == particle)
+
 def compute_max_total_br(decay_chains):
     """
     This function computes the maximum total branching ratio for all decay chains.
@@ -310,16 +230,15 @@ def compute_max_total_br(decay_chains):
     This is accomplished by computing, for each particle, the total branching
     ratio to processes of interest, and then dividing all branching ratios by
     the highest of those.
+
+    Note: the decay chain length must be at most 2.
     """
     # For each top-level charmed particle, sum BR over all its decay chains
-    top_level = set(ch.parent() for ch in decay_chains)
-    total_brs = []
-    for particle in top_level:
-        my_decay_chains = [ch for ch in decay_chains if ch.parent() == particle]
-        total_brs.append(sum(ch.branching_ratio() for ch in my_decay_chains))
-
+    top_level_particles = get_top_level_particles(decay_chains)
+    total_branching_ratios = [compute_total_br(particle, decay_chains)
+                              for particle in top_level_particles]
     # Find the maximum total branching ratio
-    return max(total_brs)
+    return max(total_branching_ratios)
 
 def fill_missing_channels(P8gen, max_total_br, decay_chains, epsilon=1e-6):
     """
@@ -331,10 +250,9 @@ def fill_missing_channels(P8gen, max_total_br, decay_chains, epsilon=1e-6):
     This function adds a "filler" channel for each particle, in order to
     preserve the ratios between different branching ratios.
     """
-    top_level = set(ch.parent() for ch in decay_chains)
-    for particle in top_level:
-        my_total_br = sum(chain.branching_ratio() for chain in decay_chains
-                          if chain.parent() == particle)
+    top_level_particles = get_top_level_particles(decay_chains)
+    for particle in top_level_particles:
+        my_total_br = compute_total_br(particle, decay_chains)
         remainder = 1 - my_total_br / max_total_br
         assert(remainder > -epsilon)
         assert(remainder < 1 + epsilon)
@@ -353,7 +271,7 @@ def add_particles(P8gen, particles, data):
     added by PYTHIA.
     """
     for particle_id in particles:
-        # Find particle in database
+        # Find particle in database (None: particle not found)
         particle = next((p for p in data['particles']
                          if particle_id in [p['id'], p['name']]), None)
         if particle is None:
@@ -361,6 +279,12 @@ def add_particles(P8gen, particles, data):
                              .format(particle, datafile))
         # Add the particle
         P8gen.SetParameters(particle['cmd'])
+
+def exit_if_zero_br(max_total_br, selection, mass, particle='HNL'):
+    if max_total_br <= 0:
+        print("No phase space for {0} from {1} at this mass: {2}. Quitting."
+              .format(particle, selection, mass))
+        sys.exit()
 
 def print_scale_factor(scaling_factor):
     "Prints the scale factor used to make event generation more efficient."

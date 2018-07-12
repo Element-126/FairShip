@@ -82,10 +82,6 @@
             "parameters": ["HardQCD::hardbbbar  = on"],
             "particles": [541],
         },
-        "tau": {
-            "parameters": [],
-            "particles": [15],
-        },
     },
 
     "channels":
@@ -111,8 +107,6 @@
         {"id":431,"decay":"ds_tau","coupling":2,"idlepton":-15},
         {"id":431,"decay":"ds_eta_e" ,"coupling":0,"idlepton":-11,"idhadron":221},
         {"id":431,"decay":"ds_eta_mu","coupling":1,"idlepton":-13,"idhadron":221},
-        # Standard model process: tau+ production from D_s+ decay
-        {"id":431,"decay":"sm","children":[-15],"br":0.0548},
 
         {"id":4122,"decay":"lambdac_Lambda0_e", "coupling":0,"idlepton":-11,"idhadron":3122},
         {"id":4122,"decay":"lambdac_Lambda0_mu", "coupling":1,"idlepton":-13,"idhadron":3122},
