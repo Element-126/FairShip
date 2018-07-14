@@ -293,7 +293,7 @@ if simEngine == "Pythia8":
    print 'and with couplings=[%.3f,%.3f]\n'%(theCouplings[0],theCouplings[1])
    print 'and with stop mass=\%.3f GeV\n',theCouplings[2]
    pythia8_conf.configurerpvsusy(P8gen,theMass,[theCouplings[0],theCouplings[1]],
-                                theCouplings[2],RPVSUSYbench,'c',deepCopy)
+                                theCouplings[2],RPVSUSYbench,inclusive,deepCopy)
   P8gen.SetParameters("ProcessLevel:all = off")
   if inputFile: 
    ut.checkFileExists(inputFile)
