@@ -38,7 +38,9 @@ charmonly    = False  # option to be set with -A to enable only charm decays, ch
 HNL          = True
 DarkPhoton   = False
 RPVSUSY      = False
+ScalarPortal = False
 RPVSUSYbench = 2
+scalar_production_from = 'B'
 
 eventDisplay = False
 inputFile    = "/eos/experiment/ship/data/Charm/Cascade-parp16-MSTP82-1-MSEL4-978Bpot.root"
@@ -78,7 +80,7 @@ try:
                                    "Cosmics=","nEvents=", "display", "seed=", "firstEvent=", "phiRandom", "mass=", "couplings=", "coupling=", "epsilon=",\
                                    "output=","tankDesign=","muShieldDesign=","NuRadio","test",\
                                    "DarkPhoton","RpvSusy","SusyBench=","sameSeed=","charm=","CharmdetSetup=","CharmTarget=","nuTauTargetDesign=","caloDesign=","strawDesign=","Estart=",\
-                                   "Eend=","production-couplings=","decay-couplings=","dry-run"])
+                                   "Eend=","production-couplings=","decay-couplings=","dry-run","ScalarPortal","scalar-production-from="])
 
 except getopt.GetoptError:
         # print help information and exit:
@@ -94,10 +96,15 @@ except getopt.GetoptError:
         print '       --DarkPhoton to generate events with dark photons (default HNL)'
         print ' for darkphoton generation, use -A meson or -A pbrem or -A qcd'
         print '       --SusyBench to specify which of the preset benchmarks to generate (default 2)'
+        print '       --ScalarPortal to generate events with a light scalar particle (default HNL)'
+        print '       --scalar-production-from to specify which heavy mesons to decay to produce the light scalar (B: B mesons (default), K: kaons (unimplemented))'
         print '       --mass or -m to set HNL or New Particle mass'
-        print '       --couplings \'U2e,U2mu,U2tau\' or -c \'U2e,U2mu,U2tau\' to set list of HNL couplings'
-        print '       --production-couplings \'U2e,U2mu,U2tau\' to set the couplings for HNL production only'
-        print '       --decay-couplings \'U2e,U2mu,U2tau\' to set the couplings for HNL decay only'
+        print '''\
+       --couplings / -c to set the list of couplings:
+           * HNL: -c \'U2e,U2mu,U2tau\'
+           * Scalar portal: -c \'theta,alpha\' (not squared!)'''
+        print '       --production-couplings to set the couplings for HNL / Scalar production only'
+        print '       --decay-couplings to set the couplings for HNL / Scalar decay only'
         print '       --epsilon value or -e value to set mixing parameter epsilon' 
         print '                   Note that for RPVSUSY the third entry of the couplings is the stop mass'
         sys.exit(2)
@@ -199,9 +206,9 @@ for o, a in opts:
            else: theMass = float(a)
         if o in ("-c", "--couplings", "--coupling",):
            theCouplings = [float(c) for c in a.split(",")]
-        if o in ("-cp", "--production-couplings"):
+        if o in ("--production-couplings",):
             theProductionCouplings = [float(c) for c in a.split(",")]
-        if o in ("-cd", "--decay-couplings"):
+        if o in ("--decay-couplings",):
             theDecayCouplings = [float(c) for c in a.split(",")]
         if o in ("-e", "--epsilon",):
            theDPepsilon = float(a)
@@ -210,11 +217,27 @@ for o, a in opts:
             nEvents = 50
         if o in ("--dry-run",):
             dryrun = True
+        if o in ("--ScalarPortal",):
+            HNL = False
+            ScalarPortal = True
+        if o in ("--scalar-production-from",):
+            scalar_production_from = a
 
 #sanity check
-if (HNL and RPVSUSY) or (HNL and DarkPhoton) or (DarkPhoton and RPVSUSY): 
- print "cannot have HNL and SUSY or DP at the same time, abort"
+if sum([HNL, RPVSUSY, DarkPhoton, ScalarPortal]) != 1:
+ print "Must specify exactly one model among the following: HNL, SUSY, DP or ScalarPortal. Aborting."
  sys.exit(2)
+
+# Set the input file (containing the heavy hadrons) for the scalar portal
+if ScalarPortal:
+    if scalar_production_from == 'B':
+        inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'
+    elif scalar_production_from == 'K':
+        # NOTE: Due to their lifetime longer than the radiation length in the target, kaons
+        # will need to be simulated differently from other heavy mesons.
+        raise(ValueError('Production from kaons not implemented in FairShip!'))
+    else:
+        raise(ValueError("Invalid production channel for the scalar portal: '{}'.".format(scalar_production_from)))
 
 if (simEngine == "Genie" or simEngine == "nuRadiography") and defaultInputFile: 
   inputFile = "/eos/experiment/ship/data/GenieEvents/genie-nu_mu.root"
@@ -294,7 +317,7 @@ primGen = ROOT.FairPrimaryGenerator()
 if simEngine == "Pythia8":
  primGen.SetTarget(ship_geo.target.z0, 0.) 
 # -----Pythia8--------------------------------------
- if HNL or RPVSUSY:
+ if HNL or RPVSUSY or ScalarPortal:
   P8gen = ROOT.HNLPythia8Generator()
   import pythia8_conf
   if HNL:
@@ -314,6 +337,20 @@ if simEngine == "Pythia8":
    print 'and with stop mass=%.3f GeV\n'%theCouplings[2]
    pythia8_conf.configurerpvsusy(P8gen,theMass,[theCouplings[0],theCouplings[1]],
                                 theCouplings[2],RPVSUSYbench,inclusive,deepCopy)
+  if ScalarPortal:
+   print 'Generating scalar portal events of mass {:.3} GeV'.format(theMass)
+   if theProductionCouplings is None and theDecayCouplings is None:
+    print 'and with couplings theta={:.3} and alpha={:.3}'.format(theCouplings[0], theCouplings[1])
+    theProductionCouplings = theDecayCouplings = theCouplings
+   elif theProductionCouplings is not None and theDecayCouplings is not None:
+    print 'and with couplings theta={:.3} and alpha={:.3} at production'.format(
+            theProductionCouplings[0], theProductionCouplings[1])
+    print 'and theta={:.3} at decay'.format(theDecayCouplings[0])
+   else:
+    raise ValueError('Either both production and decay couplings must be specified, or neither.')
+   from scalar_portal_conf import configure_scalar_portal
+   configure_scalar_portal(P8gen, theMass, theProductionCouplings,
+                           theDecayCouplings, scalar_production_from, deepCopy)
   P8gen.SetParameters("ProcessLevel:all = off")
   if inputFile: 
    ut.checkFileExists(inputFile)

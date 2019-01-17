@@ -46,10 +46,9 @@ def gettotalbrrpvsusy(h,histograms,mass,couplings):
     return totalbr
 
 def make_particles_stable(P8gen, above_lifetime):
-    # FIXME: find time unit and add it to the docstring
     """
-    Make the particles with a lifetime above the specified one stable, to allow
-    them to decay in Geant4 instead.
+    Make the particles with a lifetime (ctau) above the specified one (in mm)
+    stable, to allow them to decay in Geant4 instead.
     """
     p8 = P8gen.getPythiaInstance()
     n=1
