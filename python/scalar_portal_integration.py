@@ -38,6 +38,13 @@ def _pythia_complementary_string(parent, branching_ratio):
     _, _, placeholder_id = _placeholder_particles[charge]
     return format_pythia_string(get_pdg_id(parent), [placeholder_id], branching_ratio)
 
+def root_add_dummy_particles(pdg):
+    'Add the placeholder particles to the ROOT database.'
+    rzero = _placeholder_particles[0]
+    rplus = _placeholder_particles[1]
+    pdg.AddParticle(rzero[0], 'Reject (neutral)', 0.0, True, 0.0,  0.0, 'reject', rzero[2])
+    pdg.AddParticle(rplus[0], 'Reject (charged)', 0.0, True, 0.0, +1.0, 'reject', rplus[2])
+    pdg.AddAntiParticle(rplus[1], -rplus[2])
 
 class RescaledProductionBranchingRatios(ProductionBranchingRatios):
     '''
@@ -85,6 +92,22 @@ class RescaledProductionBranchingRatios(ProductionBranchingRatios):
         all_strs.update(complementary_strs)
         return all_strs
 
+class FairShipBranchingRatiosResult(BranchingRatiosResult):
+    '''
+    Specialization of `scalar_portal.BranchingRatiosResult` with an extra
+    method to setup ROOT.
+    '''
+    def __init__(self, *args, **kwargs):
+        super(FairShipBranchingRatiosResult, self).__init__(*args, **kwargs)
+
+    def root_add_particles(self, pdg):
+        if self.decays._mS.ndim > 0:
+            raise(ValueError('Can only set up ROOT for a single scalar mass.'))
+        pdg.AddParticle(
+            'S', 'Scalar', self.decays._mS, False, self.decays.total_width, 0.0,
+            'hiddensector', self.decays._scalar_id)
+        root_add_dummy_particles(pdg)
+
 class FairShipScalarModel(Model):
     '''
     Specialization of `scalar_portal.Model` with extra FairShip-specific
@@ -105,5 +128,5 @@ class FairShipScalarModel(Model):
             prod_channels , mass, coupling, ignore_invalid, scalar_id=self.scalar_pdg_id)
         decay_br = DecayBranchingRatios(
             decay_channels, mass, coupling, ignore_invalid, scalar_id=self.scalar_pdg_id)
-        res = BranchingRatiosResult(prod_br, decay_br)
+        res = FairShipBranchingRatiosResult(prod_br, decay_br)
         return res

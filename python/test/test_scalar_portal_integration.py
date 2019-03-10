@@ -5,6 +5,8 @@ from __future__ import absolute_import, division
 from nose.tools import assert_equals, assert_raises
 import numpy as np
 
+import ROOT
+
 from scalar_portal.production.two_body_hadronic import TwoBodyHadronic
 from scalar_portal import ProductionBranchingRatios
 from scalar_portal_integration import *
@@ -68,3 +70,40 @@ def test_fairship_scalar_model():
 9900025:addChannel = 1 3.14194722291e-05 0 -11 11
 9900025:addChannel = 1 0.999968580528 0 -13 13'''
     )
+
+def test_root_integration():
+    m = FairShipScalarModel()
+    m.production.enable('B -> S K' )
+    m.production.enable('B -> S K*')
+    m.decays.enable('S -> e+ e-'  )
+    m.decays.enable('S -> mu+ mu-')
+    res = m.compute_branching_ratios(0.5, 1)
+    pdg = ROOT.TDatabasePDG.Instance()
+    res.root_add_particles(pdg)
+    S  = pdg.GetParticle('S' )
+    r0 = pdg.GetParticle('r0')
+    rp = pdg.GetParticle('r+')
+    rm = pdg.GetParticle('r-')
+    assert_equals( S.PdgCode(), +9900025)
+    assert_equals(r0.PdgCode(), +9900080)
+    assert_equals(rp.PdgCode(), +9900081)
+    assert_equals(rm.PdgCode(), -9900081)
+    assert_equals( S.Charge(),  0.0)
+    assert_equals(r0.Charge(),  0.0)
+    assert_equals(rp.Charge(), +1.0)
+    assert_equals(rm.Charge(), -1.0)
+    assert_equals( S.Stable(), False)
+    assert_equals(r0.Stable(), True )
+    assert_equals(rp.Stable(), True )
+    assert_equals(rm.Stable(), True )
+    assert_equals(S.Width(), res.total_width)
+
+def test_root_integration_error():
+    m = FairShipScalarModel()
+    m.production.enable('B -> S K' )
+    m.production.enable('B -> S K*')
+    m.decays.enable('S -> e+ e-'  )
+    m.decays.enable('S -> mu+ mu-')
+    res = m.compute_branching_ratios([0.5, 1.5, 3.0], 1)
+    pdg = ROOT.TDatabasePDG.Instance()
+    assert_raises(ValueError, lambda: res.root_add_particles(pdg))
