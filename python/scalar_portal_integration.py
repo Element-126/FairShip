@@ -6,9 +6,13 @@ from future.utils import viewitems
 from collections import OrderedDict
 import numpy as np
 
-from scalar_portal import *
-from scalar_portal.data.particles import get_charge, get_pdg_id
+import ROOT
 
+from scalar_portal import *
+from scalar_portal.data.particles import *
+
+
+_pdg = ROOT.TDatabasePDG.Instance()
 
 _placeholder_particles = {
      0: ('r0', 'r0', +9900080),
@@ -23,6 +27,20 @@ def _pythia_dummy_particle_strings():
         may_decay=False, is_visible=False))
             for charge, (name, antiname, pdg_id) in viewitems(_placeholder_particles)
             if charge >= 0)
+
+def _pythia_sm_particle_string(particle):
+    lifetime_sec = get_lifetime(particle) / cst.second
+    root_particle = _pdg.GetParticle(particle)
+    assert(particle != None)
+    antiparticle = root_particle.AntiParticle()
+    antiname = antiparticle.GetName() if antiparticle != None else 'void'
+    mass = root_particle.Mass()
+    string = format_pythia_particle_string(
+        pdg_id=get_pdg_id(particle), name=particle, antiname=antiname,
+        spin_type=get_spin_code(particle), charge_type=3*get_charge(particle),
+        mass=mass, lifetime_si=lifetime_sec, new=True,
+        may_decay=(lifetime_sec > 0), is_visible=True)
+    return OrderedDict([(particle, string)])
 
 def _pythia_complementary_string(parent, branching_ratio):
     '''
@@ -81,14 +99,22 @@ class RescaledProductionBranchingRatios(ProductionBranchingRatios):
         return 1 / self.maximum_total_branching_ratio
 
     def pythia_strings(self):
+        all_strs = OrderedDict()
+        # Add dummy particle definitions
         dummy_particle_strs = _pythia_dummy_particle_strings()
+        all_strs.update(dummy_particle_strs)
+        # Reset parents to remove their SM channels
+        for parent in self._parent_particles:
+            new_parent_str = _pythia_sm_particle_string(parent)
+            all_strs.update(new_parent_str)
+        # Add BSM channels
         base_strs = super(RescaledProductionBranchingRatios, self).pythia_strings()
+        all_strs.update(base_strs)
+        # Add dummy channels
         complementary_strs = OrderedDict(
             ('{} (rejected)'.format(parent), _pythia_complementary_string(parent, br))
             for parent, br in viewitems(self._complementary_channels)
             if br > 0)
-        all_strs = dummy_particle_strs.copy()
-        all_strs.update(base_strs)
         all_strs.update(complementary_strs)
         return all_strs
 

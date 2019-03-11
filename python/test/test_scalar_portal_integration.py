@@ -58,6 +58,14 @@ def test_fairship_scalar_model():
 9900081:isResonance = false
 9900081:mayDecay = false
 9900081:isVisible = false
+511:new = B0 B0_bar 1 0 0 5.27953 0.0 0.0 0.0 0.45568453616
+511:isResonance = false
+511:mayDecay = true
+511:isVisible = true
+521:new = B+ B- 1 3 0 5.27915 0.0 0.0 0.0 0.491060046204
+521:isResonance = false
+521:mayDecay = true
+521:isVisible = true
 521:addChannel = 1 0.327572651899 0 9900025 321
 511:addChannel = 1 0.303974622031 0 9900025 311
 521:addChannel = 1 0.394608965081 0 9900025 323
