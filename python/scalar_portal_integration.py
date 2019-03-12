@@ -56,7 +56,7 @@ def _pythia_complementary_string(parent, branching_ratio):
     _, _, placeholder_id = _placeholder_particles[charge]
     return format_pythia_string(get_pdg_id(parent), [placeholder_id], branching_ratio)
 
-def root_add_dummy_particles(pdg):
+def _root_add_dummy_particles(pdg):
     'Add the placeholder particles to the ROOT database.'
     rzero = _placeholder_particles[0]
     rplus = _placeholder_particles[1]
@@ -132,7 +132,7 @@ class FairShipBranchingRatiosResult(BranchingRatiosResult):
         pdg.AddParticle(
             'S', 'Scalar', self.decays._mS, False, self.decays.total_width, 0.0,
             'hiddensector', self.decays._scalar_id)
-        root_add_dummy_particles(pdg)
+        _root_add_dummy_particles(pdg)
 
 class FairShipScalarModel(Model):
     '''
