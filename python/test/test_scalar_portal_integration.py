@@ -46,7 +46,7 @@ def test_fairship_scalar_model():
     m.decays.enable('S -> mu+ mu-')
     res = m.compute_branching_ratios(0.5, 1)
     assert_equals(res.pythia_full_string(), '''\
-9900025:new = S S 1 0 0 0.5 0.0 0.0 0.0 7.22250988672e-05
+9900025:new = S void 1 0 0 0.5 0.0 0.0 0.0 7.22250988672e-05
 9900025:isResonance = false
 9900025:mayDecay = true
 9900025:isVisible = false
