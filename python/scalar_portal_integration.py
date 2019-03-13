@@ -6,13 +6,9 @@ from future.utils import viewitems
 from collections import OrderedDict
 import numpy as np
 
-import ROOT
-
 from scalar_portal import *
 from scalar_portal.data.particles import *
 
-
-_pdg = ROOT.TDatabasePDG.Instance()
 
 _placeholder_particles = {
      0: ('r0', 'r0', +9900080),
@@ -28,18 +24,8 @@ def _pythia_dummy_particle_strings():
             for charge, (name, antiname, pdg_id) in viewitems(_placeholder_particles)
             if charge >= 0)
 
-def _pythia_sm_particle_string(particle):
-    lifetime_sec = get_lifetime(particle) / cst.second
-    root_particle = _pdg.GetParticle(particle)
-    assert(particle != None)
-    antiparticle = root_particle.AntiParticle()
-    antiname = antiparticle.GetName() if antiparticle != None else 'void'
-    mass = root_particle.Mass()
-    string = format_pythia_particle_string(
-        pdg_id=get_pdg_id(particle), name=particle, antiname=antiname,
-        spin_type=get_spin_code(particle), charge_type=3*get_charge(particle),
-        mass=mass, lifetime_si=lifetime_sec, new=True,
-        may_decay=(lifetime_sec > 0), is_visible=True)
+def _pythia_disable_parent_sm_channels(particle):
+    string = '{}:onMode = off'.format(get_pdg_id(particle))
     return OrderedDict([(particle, string)])
 
 def _pythia_complementary_string(parent, branching_ratio):
@@ -105,7 +91,7 @@ class RescaledProductionBranchingRatios(ProductionBranchingRatios):
         all_strs.update(dummy_particle_strs)
         # Reset parents to remove their SM channels
         for parent in self._parent_particles:
-            new_parent_str = _pythia_sm_particle_string(parent)
+            new_parent_str = _pythia_disable_parent_sm_channels(parent)
             all_strs.update(new_parent_str)
         # Add BSM channels
         base_strs = super(RescaledProductionBranchingRatios, self).pythia_strings()
