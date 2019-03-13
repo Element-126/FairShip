@@ -39,8 +39,9 @@ def _pythia_complementary_string(parent, branching_ratio):
     placeholder states can then be discarded during the analysis.
     '''
     charge = get_charge(parent)
+    rzero = _placeholder_particles[0]
     _, _, placeholder_id = _placeholder_particles[charge]
-    return format_pythia_string(get_pdg_id(parent), [placeholder_id], branching_ratio)
+    return format_pythia_string(get_pdg_id(parent), [placeholder_id, rzero[2]], branching_ratio)
 
 def _root_add_dummy_particles(pdg):
     'Add the placeholder particles to the ROOT database.'
