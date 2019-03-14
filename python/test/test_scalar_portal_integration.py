@@ -50,7 +50,7 @@ def test_fairship_scalar_model():
 9900025:isResonance = false
 9900025:mayDecay = true
 9900025:isVisible = false
-9900080:new = r0 r0 1 0 0 0.0 0.0 0.0 0.0 0.0
+9900080:new = r0 void 1 0 0 0.0 0.0 0.0 0.0 0.0
 9900080:isResonance = false
 9900080:mayDecay = false
 9900080:isVisible = false

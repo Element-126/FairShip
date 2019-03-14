@@ -11,7 +11,7 @@ from scalar_portal.data.particles import *
 
 
 _placeholder_particles = {
-     0: ('r0', 'r0', +9900080),
+     0: ('r0', 'void', +9900080),
     +1: ('r+', 'r-', +9900081),
     -1: ('r-', 'r+', -9900081)
 }
