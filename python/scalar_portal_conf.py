@@ -48,6 +48,11 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
     # Make long-lived particles decay in Geant 4.
     make_particles_stable(P8gen, above_lifetime=_ship_min_stable_ctau)
 
+    # Add missing hadronic resonances
+    # -------------------------------
+
+    _add_missing_meson_resonances(P8gen)
+
     # Configure PYTHIA for the scalar portal
     # ======================================
 
@@ -110,3 +115,30 @@ def print_instructions():
     * rundec        >= 0.5.1
     '''
     print(instructions)
+
+# Add particle definitions for missing hadronic resonances.
+# ---------------------------------------------------------
+
+# I could not find a detailed explanation of mMin and mMax, or how to choose them.
+# Looking at existing resonances in ParticleData.xml, it seems that:
+#         (mMin, mMax) - m0 ~ ±5 × mWidth
+# Source for masses and widths: average values from the 2018 Review of Particle Physics
+
+# FairShip seems to be working well without adding these resonances to the ROOT
+# database, so for now I just add them to PYTHIA.
+
+_missing_meson_resonances = {
+    # K*(1410) (S=1)
+    'K*(1410)0': '100313:new = K*(1410)0 K*(1410)bar0 3 0 0 1.421 0.236 0.23 2.60 0.0',
+    'K*(1410)+': '100323:new = K*(1410)+ K*(1410)- 3 3 0 1.421 0.236 0.23 2.60 0.0',
+    # K*(1680) (S=1)
+    'K*(1680)0': '30313:new = K*(1680)0 K*(1680)bar0 3 0 0 1.718 0.322 0.11 3.30 0.0',
+    'K*(1680)+': '30323:new = K*(1680)+ K*(1680)- 3 3 0 1.718 0.322 0.11 3.30 0.0',
+    # K*_0(700) (S=0)
+    'K*_0(700)0': '9000311:new = K*_0(700)0 K*_0(700)bar0 1 0 0 0.824 0.478 0.0 3.2 0.0',
+    'K*_0(700)+': '9000321:new = K*_0(700)+ K*_0(700)- 1 3 0 0.824 0.478 0.0 3.2 0.0',
+}
+
+def _add_missing_meson_resonances(P8gen):
+    for string in _missing_meson_resonances.values():
+        P8gen.SetParameters(string)
