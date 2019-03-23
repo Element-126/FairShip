@@ -219,8 +219,12 @@ for o, a in opts:
             ScalarPortal = True
         if o in ("--production-from",):
             production_from = a
-            if production_from in ['K', 'B']:
-                inputFile = "/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root"
+            if production_from == 'K':
+                raise(ValueError('No cascade production data for kaons!'))
+            elif production_from == 'B':
+                inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'
+            else:
+                raise(ValueError("Invalid production channel for the scalar portal: '{}'.".format(production_from)))
 
 #sanity check
 if sum([HNL, RPVSUSY, DarkPhoton, ScalarPortal]) != 1:
