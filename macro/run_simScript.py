@@ -220,6 +220,9 @@ for o, a in opts:
         if o in ("--production-from",):
             production_from = a
             if production_from == 'K':
+                # To add support for Scalar production from kaons, set `inputFile` below to the file
+                # containing the cascade data for strange hadrons, then add the PDG IDs of these hadrons to
+                # the `_ship_strange_hadron_ids` list in `scalar_portal_conf.py`.
                 raise(ValueError('No cascade production data for kaons!'))
             elif production_from == 'B':
                 inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'

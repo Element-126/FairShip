@@ -18,6 +18,14 @@ from pythia8_conf_utils import make_particles_stable, exit_if_zero_br
 _ship_beam_momentum = 400. # GeV
 _ship_min_stable_ctau = 1. # mm
 
+# All (positive) PDG codes for the strange hadrons present in the input file.
+# TODO: add IDs once cascade data for strange hadrons is available.
+_ship_strange_hadron_ids = []
+# All (positive) PDG codes for the charm hadrons present in the input file.
+_ship_charm_hadron_ids   = [411, 421, 431, 4122, 4132, 4232, 4332]
+# All (positive) PDG codes for the beauty hadrons present in the input file.
+_ship_beauty_hadron_ids  = [511, 521, 531, 5122, 5132, 5232, 5332]
+
 _pythia_scalar_id = 9900025
 _pythia_number_count = 0
 
@@ -62,8 +70,10 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
     # ----------
 
     if production_from == 'K':
+        _disable_existing_channels(P8gen, _ship_strange_hadron_ids)
         m.production.enable('K -> S pi')
     elif production_from == 'B':
+        _disable_existing_channels(P8gen, _ship_beauty_hadron_ids)
         m.production.enable('B -> S K?')
     else:
         raise(ValueError('Unsupported selection for scalar production: {}.'.format(production_from)))
@@ -142,3 +152,10 @@ _missing_meson_resonances = {
 def _add_missing_meson_resonances(P8gen):
     for string in _missing_meson_resonances.values():
         P8gen.SetParameters(string)
+
+# Disable all SM decay channels from initial heavy hadrons
+# --------------------------------------------------------
+
+def _disable_existing_channels(P8gen, particle_ids):
+    for pid in particle_ids:
+        P8gen.SetParameters('{}:onMode = off'.format(pid))
