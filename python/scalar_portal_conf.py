@@ -100,7 +100,8 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
     for par in pythia_config.split('\n'):
         P8gen.SetParameters(par)
     P8gen.SetHNLId(_pythia_scalar_id)
-    P8gen.List(_pythia_scalar_id)
+    if debug:
+        P8gen.List(_pythia_scalar_id)
 
     if debug:
         pythia_log.close()
