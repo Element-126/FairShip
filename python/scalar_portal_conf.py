@@ -81,12 +81,10 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
     # Decay
     # -----
 
-    if mass <= 1.0: # GeV
+    if mass < 2.0: # GeV
         m.decays.enable('LightScalar')
-    elif mass >= 2.0: # GeV
-        m.decays.enable('HeavyScalar')
     else:
-        raise(ValueError('Extrapolation between 1 and 2 GeV not supported yet.'))
+        m.decays.enable('HeavyScalar')
 
     # Finalize setup
     # --------------
