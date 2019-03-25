@@ -223,7 +223,9 @@ for o, a in opts:
                 # To add support for Scalar production from kaons, set `inputFile` below to the file
                 # containing the cascade data for strange hadrons, then add the PDG IDs of these hadrons to
                 # the `_ship_strange_hadron_ids` list in `scalar_portal_conf.py`.
-                raise(ValueError('No cascade production data for kaons!'))
+                # Due to their lifetime longer than the radiation length in the target, kaons will need to be
+                # simulated differently from other heavy mesons. This should be implemented as well.
+                raise(ValueError('Production from kaons not implemented in FairShip!'))
             elif production_from == 'B':
                 inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'
             else:
