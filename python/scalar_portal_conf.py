@@ -112,17 +112,20 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
 
 def print_instructions():
     # FIXME: write more complete instructions.
-    instructions = '''\
-    Please install the `scalar_portal` submodule and its dependencies.
+    instructions = '''
+Please install the `scalar_portal` package and its dependencies.
 
-    Dependencies:
-    * numpy         >= 1.11.0
-    * future        >= 0.17.1
-    * scipy         >= 0.15.1
-    * pandas        >= 0.19.0
-    * particletools >= 1.0.1
-    * rundec        >= 0.5.1
-    '''
+$ cd "$FAIRSHIP"/python
+$ git clone https://github.com/JLTastet/scalar_portal.git
+
+Dependencies:
+* numpy         >= 1.11.0
+* future        >= 0.17.1
+* scipy         >= 0.15.1
+* pandas        >= 0.19.0
+* particletools >= 1.0.1
+* rundec        >= 0.5.1
+'''
     print(instructions)
 
 # Add particle definitions for missing hadronic resonances.
