@@ -10,6 +10,7 @@ import ROOT
 from scalar_portal.production.two_body_hadronic import TwoBodyHadronic
 from scalar_portal import ProductionBranchingRatios
 from scalar_portal_integration import *
+from scalar_portal_integration import _make_placeholder_decay_channel
 
 def test_rescaled_production_br():
     channels = [TwoBodyHadronic('B+', 'pi+'), TwoBodyHadronic('B+', 'K*_2(1430)+'),
@@ -58,6 +59,10 @@ def test_fairship_scalar_model():
 9900081:isResonance = false
 9900081:mayDecay = false
 9900081:isVisible = false
+9900082:new = MultiMeson void 1 0 0 0.0 0.0 0.0 0.0 0.0
+9900082:isResonance = false
+9900082:mayDecay = false
+9900082:isVisible = false
 511:onMode = off
 521:onMode = off
 511:addChannel = 1 0.303974622031 0 9900025 311
@@ -109,3 +114,8 @@ def test_root_integration_error():
     res = m.compute_branching_ratios([0.5, 1.5, 3.0], 1)
     pdg = ROOT.TDatabasePDG()
     assert_raises(ValueError, lambda: res.root_add_particles(pdg))
+
+def test_placeholders():
+    st = _make_placeholder_decay_channel('S -> mesons...', 0.42, 9900025)
+    assert_equals(st, '9900025:addChannel = 1 0.42 0 9900082 9900082')
+    assert_raises(ValueError, lambda: _make_placeholder_decay_channel('S -> X Y', 0.42, 9900025))
