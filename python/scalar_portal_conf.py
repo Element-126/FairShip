@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, division, print_function
+from future.utils import viewitems
+import os
+import yaml
 
 try:
     from scalar_portal_integration import FairShipScalarModel
@@ -28,6 +31,9 @@ _ship_beauty_hadron_ids  = [511, 521, 531, 5122, 5132, 5232, 5332]
 
 _pythia_scalar_id = 9900025
 _pythia_number_count = 0
+
+_srcdir = os.path.dirname(__file__)
+_decay_selection_file = os.path.join(_srcdir, 'ScalarDecaySelection.yaml')
 
 def configure_scalar_portal(P8gen, mass, coupling, production_from,
                             deep_copy=False, debug=True):
@@ -85,6 +91,19 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
         m.decays.enable('LightScalar')
     else:
         m.decays.enable('HeavyScalar')
+
+    # Disable masked channels
+    # -----------------------
+
+    with open(_decay_selection_file, 'r') as f:
+        selection = yaml.safe_load(f)
+    available_channels = m.decays.list_available()
+    for channel, allowed in viewitems(selection):
+        if not channel in available_channels:
+            raise(ValueError("Channel '{}' from '{}' is not available.".format(
+                channel, _decay_selection_file)))
+        if not allowed:
+            m.decays.disable(channel)
 
     # Finalize setup
     # --------------
