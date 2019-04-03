@@ -10,25 +10,19 @@ from scalar_portal import *
 from scalar_portal.data.particles import *
 
 
-_rejected_decay_codes = {
-     0:  9900080,
-    +1: +9900081,
-    -1: -9900081,
+_placeholder_particles = {
+     0: ('r0', 'void', +9900080),
+    +1: ('r+', 'r-', +9900081),
+    -1: ('r-', 'r+', -9900081)
 }
-
-_placeholder_particles = OrderedDict([
-    # PDG code, name, antiname, charge, description, group
-    ('r0', (9900080, 'r0', 'void',  0, 'Reject (neutral)', 'reject')),
-    ('r+', (9900081, 'r+', 'r-'  , +1, 'Reject (charged)', 'reject')),
-    ('multi', (9900082, 'MultiMeson', 'void', 0, 'Multi-meson decay', 'excluded')),
-])
 
 def _pythia_dummy_particle_strings():
     return OrderedDict((name, format_pythia_particle_string(
         pdg_id=pdg_id, name=name, antiname=antiname, spin_type=1,
         charge_type=3*charge, mass=0., lifetime_si=0., new=True,
         may_decay=False, is_visible=False))
-        for pdg_id, name, antiname, charge, _, _ in _placeholder_particles.values())
+            for charge, (name, antiname, pdg_id) in viewitems(_placeholder_particles)
+            if charge >= 0)
 
 def _pythia_disable_parent_sm_channels(particle):
     string = '{}:onMode = off'.format(get_pdg_id(particle))
@@ -45,27 +39,17 @@ def _pythia_complementary_string(parent, branching_ratio):
     placeholder states can then be discarded during the analysis.
     '''
     charge = get_charge(parent)
-    rzero = _placeholder_particles['r0']
-    placeholder_id = _rejected_decay_codes[charge]
-    return format_pythia_string(get_pdg_id(parent), [placeholder_id, rzero[0]], branching_ratio)
+    rzero = _placeholder_particles[0]
+    _, _, placeholder_id = _placeholder_particles[charge]
+    return format_pythia_string(get_pdg_id(parent), [placeholder_id, rzero[2]], branching_ratio)
 
 def _root_add_dummy_particles(pdg):
     'Add the placeholder particles to the ROOT database.'
-    for placeholder in _placeholder_particles.values():
-        pdg_id, name, antiname, charge, description, group = placeholder
-        pdg.AddParticle(name, description, 0.0, True, 0.0,  charge, group, pdg_id)
-        if antiname != 'void':
-            pdg.AddAntiParticle(antiname, -pdg_id)
-
-def _make_multimeson_decay_channel(branching_ratio, scalar_id):
-    pid = _placeholder_particles['multi'][0]
-    return format_pythia_string(scalar_id, [pid, pid], branching_ratio)
-
-def _make_placeholder_decay_channel(ch, branching_ratio, scalar_id):
-    if ch == 'S -> mesons...': # Multi-meson decay channel
-        return _make_multimeson_decay_channel(branching_ratio, scalar_id)
-    else:
-        raise(ValueError("No recipe for channel '{}'.".format(ch)))
+    rzero = _placeholder_particles[0]
+    rplus = _placeholder_particles[1]
+    pdg.AddParticle(rzero[0], 'Reject (neutral)', 0.0, True, 0.0,  0.0, 'reject', rzero[2])
+    pdg.AddParticle(rplus[0], 'Reject (charged)', 0.0, True, 0.0, +1.0, 'reject', rplus[2])
+    pdg.AddAntiParticle(rplus[1], -rplus[2])
 
 class RescaledProductionBranchingRatios(ProductionBranchingRatios):
     '''
@@ -121,26 +105,6 @@ class RescaledProductionBranchingRatios(ProductionBranchingRatios):
         all_strs.update(complementary_strs)
         return all_strs
 
-class FairShipDecayBranchingRatios(DecayBranchingRatios):
-    '''
-    Specialization of DecayBranchingRatios, which sets up dummy decay channels
-    if no Pythia string is provided.
-
-    This is done to prevent Pythia from rescaling all branching ratios so that
-    they sum up to unity, effectively altering the partial widths of the
-    simulated Scalar particle.
-    '''
-    def __init__(self, *args, **kwargs):
-        super(FairShipDecayBranchingRatios, self).__init__(*args, **kwargs)
-
-    def pythia_strings(self):
-        strs = super(FairShipDecayBranchingRatios, self).pythia_strings()
-        for ch, st in viewitems(strs):
-            if st is None:
-                strs[ch] = _make_placeholder_decay_channel(
-                    ch, self.branching_ratios[ch], self._scalar_id)
-        return strs
-
 class FairShipBranchingRatiosResult(BranchingRatiosResult):
     '''
     Specialization of `scalar_portal.BranchingRatiosResult` with an extra
@@ -175,7 +139,7 @@ class FairShipScalarModel(Model):
         decay_channels = self.decays.get_active_processes()
         prod_br  = RescaledProductionBranchingRatios(
             prod_channels , mass, coupling, ignore_invalid, scalar_id=self.scalar_pdg_id)
-        decay_br = FairShipDecayBranchingRatios(
+        decay_br = DecayBranchingRatios(
             decay_channels, mass, coupling, ignore_invalid, scalar_id=self.scalar_pdg_id)
         res = FairShipBranchingRatiosResult(prod_br, decay_br)
         return res

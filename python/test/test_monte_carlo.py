@@ -122,6 +122,7 @@ def _compare_branching_ratios(nevents, mass, coupling, production_from,
         except:
             print('Channel {} not observed in MC output.'.format(ch))
     print('Total BR for simulated channels = {}'.format(total_expected_br))
+    corrected_decay_br = {ch: br / total_expected_br for ch, br in viewitems(decay_br)}
     all_pass = True
     print(_header)
     print(_production_subheader)
@@ -129,7 +130,7 @@ def _compare_branching_ratios(nevents, mass, coupling, production_from,
         all_pass &= _print_br_comparison(ch, prod_br, observed_prod_br)
     print(_decay_subheader)
     for ch in decay_br.keys():
-        all_pass &= _print_br_comparison(ch, decay_br, observed_decay_br)
+        all_pass &= _print_br_comparison(ch, corrected_decay_br, observed_decay_br)
     assert(all_pass)
 
 def test_mc_bmesons_light_scalar():
