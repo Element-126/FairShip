@@ -14,7 +14,6 @@ S -> pi0 pi0    : True
 S -> pi+ pi-    : True
 S -> K0 Kbar0   : True
 S -> K+ K-      : True
-S -> mesons...  : True
 S -> g g        : True
 S -> s sbar     : True
 S -> c cbar     : True
