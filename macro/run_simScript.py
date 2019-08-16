@@ -40,7 +40,7 @@ DarkPhoton   = False
 RPVSUSY      = False
 ScalarPortal = False
 RPVSUSYbench = 2
-production_from = 'B'
+scalar_production_from = 'B'
 
 eventDisplay = False
 inputFile    = "/eos/experiment/ship/data/Charm/Cascade-parp16-MSTP82-1-MSEL4-978Bpot.root"
@@ -80,7 +80,7 @@ try:
                                    "Cosmics=","nEvents=", "display", "seed=", "firstEvent=", "phiRandom", "mass=", "couplings=", "coupling=", "epsilon=",\
                                    "output=","tankDesign=","muShieldDesign=","NuRadio","test",\
                                    "DarkPhoton","RpvSusy","SusyBench=","sameSeed=","charm=","CharmdetSetup=","CharmTarget=","nuTauTargetDesign=","caloDesign=","strawDesign=","Estart=",\
-                                   "Eend=","production-couplings=","decay-couplings=","dry-run","ScalarPortal","production-from="])
+                                   "Eend=","production-couplings=","decay-couplings=","dry-run","ScalarPortal","scalar-production-from="])
 
 except getopt.GetoptError:
         # print help information and exit:
@@ -97,7 +97,7 @@ except getopt.GetoptError:
         print ' for darkphoton generation, use -A meson or -A pbrem or -A qcd'
         print '       --SusyBench to specify which of the preset benchmarks to generate (default 2)'
         print '       --ScalarPortal to generate events with a light scalar particle (default HNL)'
-        print '       --production-from to specify which heavy mesons to decay to produce the light scalar (B: B mesons (default), K: kaons (unimplemented))'
+        print '       --scalar-production-from to specify which heavy mesons to decay to produce the light scalar (B: B mesons (default), K: kaons (unimplemented))'
         print '       --mass or -m to set HNL or New Particle mass'
         print '       --couplings \'U2e,U2mu,U2tau\' or -c \'U2e,U2mu,U2tau\' to set list of HNL couplings'
         print '       --production-couplings \'U2e,U2mu,U2tau\' to set the couplings for HNL production only'
@@ -217,16 +217,16 @@ for o, a in opts:
         if o in ("--ScalarPortal",):
             HNL = False
             ScalarPortal = True
-        if o in ("--production-from",):
-            production_from = a
-            if production_from == 'B':
+        if o in ("--scalar-production-from",):
+            scalar_production_from = a
+            if scalar_production_from == 'B':
                 inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'
-            elif production_from == 'K':
+            elif scalar_production_from == 'K':
                 # NOTE: Due to their lifetime longer than the radiation length in the target, kaons
                 # will need to be simulated differently from other heavy mesons.
                 raise(ValueError('Production from kaons not implemented in FairShip!'))
             else:
-                raise(ValueError("Invalid production channel for the scalar portal: '{}'.".format(production_from)))
+                raise(ValueError("Invalid production channel for the scalar portal: '{}'.".format(scalar_production_from)))
 
 #sanity check
 if sum([HNL, RPVSUSY, DarkPhoton, ScalarPortal]) != 1:
@@ -335,7 +335,7 @@ if simEngine == "Pythia8":
    print 'Generating scalar portal events of mass {:.3} GeV'.format(theMass)
    print 'and with coupling={:.3}'.format(theCouplings[0])
    from scalar_portal_conf import configure_scalar_portal
-   configure_scalar_portal(P8gen, theMass, theCouplings[0], production_from, deepCopy)
+   configure_scalar_portal(P8gen, theMass, theCouplings[0], scalar_production_from, deepCopy)
   P8gen.SetParameters("ProcessLevel:all = off")
   if inputFile: 
    ut.checkFileExists(inputFile)
