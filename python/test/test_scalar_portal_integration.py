@@ -39,7 +39,7 @@ def test_rescaled_production_br():
     assert(np.all(np.abs(sf * br_pi0 - sbr_pi0) <= epsilon * sbr_pi0))
 
 def test_fairship_scalar_model():
-    m = FairShipScalarModel()
+    m = FairShipScalarModel(scalar_id=9900025)
     m.production.enable('B -> S K' )
     m.production.enable('B -> S K*')
     m.decays.enable('S -> e+ e-'  )
@@ -74,7 +74,7 @@ def test_fairship_scalar_model():
     )
 
 def test_root_integration():
-    m = FairShipScalarModel()
+    m = FairShipScalarModel(scalar_id=9900025)
     m.production.enable('B -> S K' )
     m.production.enable('B -> S K*')
     m.decays.enable('S -> e+ e-'  )

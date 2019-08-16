@@ -126,7 +126,7 @@ class FairShipScalarModel(Model):
     Specialization of `scalar_portal.Model` with extra FairShip-specific
     features.
     '''
-    def __init__(self, scalar_id=9900025):
+    def __init__(self, scalar_id=9900015):
         super(FairShipScalarModel, self).__init__(scalar_id)
 
     def compute_branching_ratios(self, mass, coupling, ignore_invalid=False):

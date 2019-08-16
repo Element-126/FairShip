@@ -29,7 +29,7 @@ _ship_charm_hadron_ids   = [411, 421, 431, 4122, 4132, 4232, 4332]
 # All (positive) PDG codes for the beauty hadrons present in the input file.
 _ship_beauty_hadron_ids  = [511, 521, 531, 5122, 5132, 5232, 5332]
 
-_pythia_scalar_id = 9900025
+_pythia_scalar_id = 9900015
 _pythia_number_count = 0
 
 _srcdir = os.path.dirname(__file__)
