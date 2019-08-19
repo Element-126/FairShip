@@ -219,19 +219,22 @@ for o, a in opts:
             ScalarPortal = True
         if o in ("--scalar-production-from",):
             scalar_production_from = a
-            if scalar_production_from == 'B':
-                inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'
-            elif scalar_production_from == 'K':
-                # NOTE: Due to their lifetime longer than the radiation length in the target, kaons
-                # will need to be simulated differently from other heavy mesons.
-                raise(ValueError('Production from kaons not implemented in FairShip!'))
-            else:
-                raise(ValueError("Invalid production channel for the scalar portal: '{}'.".format(scalar_production_from)))
 
 #sanity check
 if sum([HNL, RPVSUSY, DarkPhoton, ScalarPortal]) != 1:
  print "Must specify exactly one model among the following: HNL, SUSY, DP or ScalarPortal. Aborting."
  sys.exit(2)
+
+# Set the input file (containing the heavy hadrons) for the scalar portal
+if ScalarPortal:
+    if scalar_production_from == 'B':
+        inputFile = '/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root'
+    elif scalar_production_from == 'K':
+        # NOTE: Due to their lifetime longer than the radiation length in the target, kaons
+        # will need to be simulated differently from other heavy mesons.
+        raise(ValueError('Production from kaons not implemented in FairShip!'))
+    else:
+        raise(ValueError("Invalid production channel for the scalar portal: '{}'.".format(scalar_production_from)))
 
 if (simEngine == "Genie" or simEngine == "nuRadiography") and defaultInputFile: 
   inputFile = "/eos/experiment/ship/data/GenieEvents/genie-nu_mu.root"
