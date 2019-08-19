@@ -129,17 +129,19 @@ class FairShipScalarModel(Model):
     def __init__(self, scalar_id=9900015):
         super(FairShipScalarModel, self).__init__(scalar_id)
 
-    def compute_branching_ratios(self, mass, coupling, ignore_invalid=False):
+    def compute_branching_ratios(self, mass, couplings=None, ignore_invalid=False, **kwargs):
         '''
         Compute the decay and (rescaled) production branching ratios of the
         scalar particle, and return a `BranchingRatiosResult` object containing
         the result.
         '''
+        if couplings is None:
+            couplings = kwargs
         prod_channels  = self.production.get_active_processes()
         decay_channels = self.decays.get_active_processes()
         prod_br  = RescaledProductionBranchingRatios(
-            prod_channels , mass, coupling, ignore_invalid, scalar_id=self.scalar_pdg_id)
+            prod_channels , mass, couplings, ignore_invalid, scalar_id=self.scalar_pdg_id)
         decay_br = DecayBranchingRatios(
-            decay_channels, mass, coupling, ignore_invalid, scalar_id=self.scalar_pdg_id)
+            decay_channels, mass, couplings, ignore_invalid, scalar_id=self.scalar_pdg_id)
         res = FairShipBranchingRatiosResult(prod_br, decay_br)
         return res

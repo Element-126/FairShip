@@ -32,8 +32,8 @@ _pythia_number_count = 0
 _srcdir = os.path.dirname(__file__)
 _decay_selection_file = os.path.join(_srcdir, 'ScalarDecaySelection.yaml')
 
-def configure_scalar_portal(P8gen, mass, coupling, production_from,
-                            deep_copy=False, debug=True):
+def configure_scalar_portal(P8gen, mass, production_couplings, decay_couplings,
+                            production_from, deep_copy=False, debug=True):
     '''
     This function configures `HNLPythia8Generator` for the scalar particle.
     '''
@@ -42,6 +42,12 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
         print_instructions()
         assert(_import_exception is not None)
         raise(_import_exception)
+
+    if len(production_couplings) != 2 or len(decay_couplings) != 2:
+        raise(ValueError('Couplings must be passed as 2-element arrays: [theta, alpha].'))
+
+    prod_coupling_dict  = {'theta': production_couplings[0], 'alpha': production_couplings[1]}
+    decay_coupling_dict = {'theta': decay_couplings[0]     , 'alpha': decay_couplings[1]     }
 
     if debug:
         pythia_log=open('pythia8_conf.txt','w')
@@ -74,7 +80,11 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
 
     if production_from == 'B':
         _disable_existing_channels(P8gen, _ship_beauty_hadron_ids)
-        m.production.enable('B -> S K?')
+        if prod_coupling_dict['theta'] != 0:
+            m.production.enable('B -> S K?')
+        if prod_coupling_dict['alpha'] != 0:
+            m.production.enable('B -> S S K?')
+            m.production.enable('B -> S S'   )
     else:
         raise(ValueError('Unsupported selection for scalar production: {}.'.format(production_from)))
 
@@ -102,12 +112,13 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
     # Finalize setup
     # --------------
 
-    br = m.compute_branching_ratios(mass, coupling)
-    exit_if_zero_br(br.production.maximum_total_branching_ratio, production_from, mass,
+    prod_br  = m.compute_branching_ratios(mass, prod_coupling_dict )
+    decay_br = m.compute_branching_ratios(mass, decay_coupling_dict)
+    exit_if_zero_br(prod_br.production.maximum_total_branching_ratio, production_from, mass,
                     particle='Scalar')
-    scaling_factor = br.production.scaling_factor
+    scaling_factor = prod_br.production.scaling_factor
     print('All production branching ratios rescaled by {:.4}'.format(scaling_factor))
-    pythia_config = br.pythia_full_string()
+    pythia_config = pythia_full_string(prod_br, decay_br)
     for par in pythia_config.split('\n'):
         P8gen.SetParameters(par)
     P8gen.SetHNLId(_pythia_scalar_id)
@@ -121,7 +132,21 @@ def configure_scalar_portal(P8gen, mass, coupling, production_from,
     # ==============
 
     pdg = ROOT.TDatabasePDG.Instance()
-    br.root_add_particles(pdg)
+    decay_br.root_add_particles(pdg)
+
+def pythia_full_string(prod_br, decay_br):
+    '''
+    Generates a PYTHIA configuration string with different couplings for the
+    production and decay processes.
+    '''
+    particle_str = decay_br.pythia_particle_string() # Needs total decay width
+    production_strs = prod_br.production.pythia_strings()
+    decay_strs = decay_br.decays.pythia_strings()
+    full_string = '\n'.join(
+        [particle_str] +
+        list(st for st in production_strs.values() if st is not None) +
+        list(st for st in decay_strs.values()      if st is not None))
+    return full_string
 
 def print_instructions():
     # FIXME: write more complete instructions.

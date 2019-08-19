@@ -99,9 +99,12 @@ except getopt.GetoptError:
         print '       --ScalarPortal to generate events with a light scalar particle (default HNL)'
         print '       --scalar-production-from to specify which heavy mesons to decay to produce the light scalar (B: B mesons (default), K: kaons (unimplemented))'
         print '       --mass or -m to set HNL or New Particle mass'
-        print '       --couplings \'U2e,U2mu,U2tau\' or -c \'U2e,U2mu,U2tau\' to set list of HNL couplings'
-        print '       --production-couplings \'U2e,U2mu,U2tau\' to set the couplings for HNL production only'
-        print '       --decay-couplings \'U2e,U2mu,U2tau\' to set the couplings for HNL decay only'
+        print '''\
+       --couplings / -c to set the list of couplings:
+           * HNL: -c \'U2e,U2mu,U2tau\'
+           * Scalar portal: -c \'theta,alpha\' (not squared!)'''
+        print '       --production-couplings to set the couplings for HNL / Scalar production only'
+        print '       --decay-couplings to set the couplings for HNL / Scalar decay only'
         print '       --epsilon value or -e value to set mixing parameter epsilon' 
         print '                   Note that for RPVSUSY the third entry of the couplings is the stop mass'
         sys.exit(2)
@@ -336,9 +339,18 @@ if simEngine == "Pythia8":
                                 theCouplings[2],RPVSUSYbench,inclusive,deepCopy)
   if ScalarPortal:
    print 'Generating scalar portal events of mass {:.3} GeV'.format(theMass)
-   print 'and with coupling={:.3}'.format(theCouplings[0])
+   if theProductionCouplings is None and theDecayCouplings is None:
+    print 'and with couplings theta={:.3} and alpha={:.3}'.format(theCouplings[0], theCouplings[1])
+    theProductionCouplings = theDecayCouplings = theCouplings
+   elif theProductionCouplings is not None and theDecayCouplings is not None:
+    print 'and with couplings theta={:.3} and alpha={:.3} at production'.format(
+            theProductionCouplings[0], theProductionCouplings[1])
+    print 'and theta={:.3} at decay'.format(theDecayCouplings[0])
+   else:
+    raise ValueError('Either both production and decay couplings must be specified, or neither.')
    from scalar_portal_conf import configure_scalar_portal
-   configure_scalar_portal(P8gen, theMass, theCouplings[0], scalar_production_from, deepCopy)
+   configure_scalar_portal(P8gen, theMass, theProductionCouplings,
+                           theDecayCouplings, scalar_production_from, deepCopy)
   P8gen.SetParameters("ProcessLevel:all = off")
   if inputFile: 
    ut.checkFileExists(inputFile)
