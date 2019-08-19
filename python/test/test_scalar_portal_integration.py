@@ -15,8 +15,8 @@ def test_rescaled_production_br():
     channels = [TwoBodyHadronic('B+', 'pi+'), TwoBodyHadronic('B+', 'K*_2(1430)+'),
                 TwoBodyHadronic('B0', 'pi0'), TwoBodyHadronic('B0', 'K*_2(1430)0')]
     mS = np.array([1, 4])
-    br  = ProductionBranchingRatios(        channels, mS, 1)
-    sbr = RescaledProductionBranchingRatios(channels, mS, 1)
+    br  = ProductionBranchingRatios(        channels, mS, {'theta': 1})
+    sbr = RescaledProductionBranchingRatios(channels, mS, {'theta': 1})
     br_pi1  = br.branching_ratios[ 'B+ -> S pi+'        ]
     br_K21  = br.branching_ratios[ 'B+ -> S K*_2(1430)+']
     sbr_pi1 = sbr.branching_ratios['B+ -> S pi+'        ]
@@ -44,7 +44,7 @@ def test_fairship_scalar_model():
     m.production.enable('B -> S K*')
     m.decays.enable('S -> e+ e-'  )
     m.decays.enable('S -> mu+ mu-')
-    res = m.compute_branching_ratios(0.5, 1)
+    res = m.compute_branching_ratios(0.5, theta=1)
     assert_equals(res.pythia_full_string(), '''\
 9900025:new = S void 1 0 0 0.5 0.0 0.0 0.0 7.22250988672e-05
 9900025:isResonance = false
@@ -79,7 +79,7 @@ def test_root_integration():
     m.production.enable('B -> S K*')
     m.decays.enable('S -> e+ e-'  )
     m.decays.enable('S -> mu+ mu-')
-    res = m.compute_branching_ratios(0.5, 1)
+    res = m.compute_branching_ratios(0.5, theta=1)
     pdg = ROOT.TDatabasePDG()
     res.root_add_particles(pdg)
     S  = pdg.GetParticle('S' )
@@ -106,6 +106,6 @@ def test_root_integration_error():
     m.production.enable('B -> S K*')
     m.decays.enable('S -> e+ e-'  )
     m.decays.enable('S -> mu+ mu-')
-    res = m.compute_branching_ratios([0.5, 1.5, 3.0], 1)
+    res = m.compute_branching_ratios([0.5, 1.5, 3.0], theta=1)
     pdg = ROOT.TDatabasePDG()
     assert_raises(ValueError, lambda: res.root_add_particles(pdg))
