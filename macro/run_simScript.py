@@ -203,9 +203,9 @@ for o, a in opts:
            else: theMass = float(a)
         if o in ("-c", "--couplings", "--coupling",):
            theCouplings = [float(c) for c in a.split(",")]
-        if o in ("-cp", "--production-couplings"):
+        if o in ("--production-couplings",):
             theProductionCouplings = [float(c) for c in a.split(",")]
-        if o in ("-cd", "--decay-couplings"):
+        if o in ("--decay-couplings",):
             theDecayCouplings = [float(c) for c in a.split(",")]
         if o in ("-e", "--epsilon",):
            theDPepsilon = float(a)
