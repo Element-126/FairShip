@@ -66,7 +66,7 @@ class RescaledProductionBranchingRatios(ProductionBranchingRatios):
             (parent, sum(self._br[ch] for ch in self._channels_by_parent[parent]))
             for parent in self._parent_particles)
         # Ref: https://stackoverflow.com/a/39279912
-        self._max_sum_br = np.fmax.reduce(self._sum_br.values())
+        self._max_sum_br = np.fmax.reduce(list(self._sum_br.values()))
         self._rescaled_br = OrderedDict(
             (st, br / self._max_sum_br) for st, br in viewitems(self._br))
         self._complementary_channels = OrderedDict(

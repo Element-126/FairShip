@@ -113,7 +113,7 @@ def _compare_branching_ratios(nevents, mass, couplings, production_from,
     err_prod_br = dict()
     observed_decay_br = dict()
     err_decay_br = dict()
-    for ch, br in viewitems(prod_br):
+    for ch in list(prod_br.keys()):
         parent, children = _from_channel_str(ch)
         parent_id = _safe_get_pdg_id(parent)
         children_ids = tuple(_safe_get_pdg_id(c) for c in children)
@@ -123,7 +123,7 @@ def _compare_branching_ratios(nevents, mass, couplings, production_from,
             nb_had = hadron_ct[parent_id]
             nb_dec = prod_ct[(parent_id, children_ids)]
             observed_prod_br[ch] = nb_dec / nb_had
-            exp_nb_dec = br * nb_had
+            exp_nb_dec = prod_br[ch] * nb_had
             err_prod_br[ch] = exp_nb_dec**(1/2) / nb_had + exp_nb_dec / nb_had**(3/2)
         except:
             print('Channel {} not observed in MC output.'.format(ch))
@@ -133,7 +133,7 @@ def _compare_branching_ratios(nevents, mass, couplings, production_from,
             cc_nb_had = hadron_ct[_get_antiparticle(parent_id)]
             cc_nb_dec = prod_ct[(_get_antiparticle(parent_id), tuple(map(_get_antiparticle, children_ids)))]
             observed_prod_br[cc_ch] = cc_nb_dec / cc_nb_had
-            cc_exp_nb_dec = br * cc_nb_had
+            cc_exp_nb_dec = prod_br[ch] * cc_nb_had
             err_prod_br[cc_ch] = cc_exp_nb_dec**(1/2) / cc_nb_had + cc_exp_nb_dec / cc_nb_had**(3/2)
         except:
             print('Channel {} not observed in MC output.'.format(cc_ch))
