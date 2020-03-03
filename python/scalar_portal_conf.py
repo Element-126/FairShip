@@ -92,22 +92,22 @@ def configure_scalar_portal(P8gen, mass, production_couplings, decay_couplings,
     # -----
 
     if mass < 2.0: # GeV
-        m.decays.enable('LightScalar')
+        m.decay.enable('LightScalar')
     else:
-        m.decays.enable('HeavyScalar')
+        m.decay.enable('HeavyScalar')
 
     # Disable masked channels
     # -----------------------
 
     with open(_decay_selection_file, 'r') as f:
         selection = yaml.safe_load(f)
-    available_channels = m.decays.list_available()
+    available_channels = m.decay.list_available()
     for channel, allowed in viewitems(selection):
         if not channel in available_channels:
             raise(ValueError("Channel '{}' from '{}' is not available.".format(
                 channel, _decay_selection_file)))
         if not allowed:
-            m.decays.disable(channel)
+            m.decay.disable(channel)
 
     # Finalize setup
     # --------------
@@ -141,7 +141,7 @@ def pythia_full_string(prod_br, decay_br):
     '''
     particle_str = decay_br.pythia_particle_string() # Needs total decay width
     production_strs = prod_br.production.pythia_strings()
-    decay_strs = decay_br.decays.pythia_strings()
+    decay_strs = decay_br.decay.pythia_strings()
     full_string = '\n'.join(
         [particle_str] +
         list(st for st in production_strs.values() if st is not None) +

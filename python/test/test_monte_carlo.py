@@ -105,10 +105,10 @@ def _compare_branching_ratios(nevents, mass, couplings, production_from,
     for proc in production_proc:
         m.production.enable(proc)
     for proc in decay_proc:
-        m.decays.enable(proc)
+        m.decay.enable(proc)
     res = m.compute_branching_ratios(mass, {'theta': couplings[0], 'alpha': couplings[1]})
     prod_br = res.production.branching_ratios
-    decay_br = res.decays.branching_ratios
+    decay_br = res.decay.branching_ratios
     observed_prod_br = dict()
     err_prod_br = dict()
     observed_decay_br = dict()

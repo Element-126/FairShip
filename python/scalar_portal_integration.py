@@ -114,11 +114,11 @@ class FairShipBranchingRatiosResult(BranchingRatiosResult):
         super(FairShipBranchingRatiosResult, self).__init__(*args, **kwargs)
 
     def root_add_particles(self, pdg):
-        if self.decays._mS.ndim > 0:
+        if self.decay._mS.ndim > 0:
             raise(ValueError('Can only set up ROOT for a single scalar mass.'))
         pdg.AddParticle(
-            'S', 'Scalar', self.decays._mS, False, self.decays.total_width, 0.0,
-            'hiddensector', self.decays._scalar_id)
+            'S', 'Scalar', self.decay._mS, False, self.decay.total_width, 0.0,
+            'hiddensector', self.decay._scalar_id)
         _root_add_dummy_particles(pdg)
 
 class FairShipScalarModel(Model):
@@ -138,7 +138,7 @@ class FairShipScalarModel(Model):
         if couplings is None:
             couplings = kwargs
         prod_channels  = self.production.get_active_processes()
-        decay_channels = self.decays.get_active_processes()
+        decay_channels = self.decay.get_active_processes()
         prod_br  = RescaledProductionBranchingRatios(
             prod_channels , mass, couplings, ignore_invalid, scalar_id=self.scalar_pdg_id)
         decay_br = DecayBranchingRatios(
